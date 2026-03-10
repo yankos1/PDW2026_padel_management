@@ -9,7 +9,7 @@ import java.util.List;
 public class Site {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Long id;
     private String name;
     private LocalTime heureOuverture;
     private LocalTime heureFermeture;
@@ -17,6 +17,6 @@ public class Site {
     @OneToMany(mappedBy = "site")
     private List<Terrain> terrains;
     @OneToMany(mappedBy = "site")
-    private List<jourFermeture> jourFermeture;
+    private List<JourFermeture> jourFermeture;
 
 }

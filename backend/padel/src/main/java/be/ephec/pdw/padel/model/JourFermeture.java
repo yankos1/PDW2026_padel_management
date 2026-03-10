@@ -5,10 +5,10 @@ import jakarta.persistence.*;
 import java.time.LocalDate;
 
 @Entity
-public class jourFermeture {
+public class JourFermeture {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Long id;
     private LocalDate date;
 
     @ManyToOne

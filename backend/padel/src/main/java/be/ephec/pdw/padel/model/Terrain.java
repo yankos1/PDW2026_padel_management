@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 @Entity
 public class Terrain {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Long id;
     private String nom;
 
     @ManyToOne

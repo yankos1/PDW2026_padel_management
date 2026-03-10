@@ -1,12 +1,14 @@
 package be.ephec.pdw.padel.model;
 
 import jakarta.persistence.*;
+import lombok.Data;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
 @DiscriminatorColumn(name = "type_membre")
+@Data
 public abstract class Membre {
     @Id
     @Column(nullable = false, unique = true)
@@ -18,4 +20,7 @@ public abstract class Membre {
     private boolean penaliteActive;
     private LocalDateTime finPenalite;
 
+    public boolean aUnePenaliteActive() {
+        return penaliteActive && finPenalite != null  && finPenalite.isAfter(LocalDateTime.now());
+    }
 }
