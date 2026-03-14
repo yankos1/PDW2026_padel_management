@@ -17,10 +17,13 @@ public abstract class Membre {
     private String prenom;
     private String email;
 
+    private double soldeDu;
+
     private boolean penaliteActive;
     private LocalDateTime finPenalite;
 
     public boolean aUnePenaliteActive() {
         return penaliteActive && finPenalite != null  && finPenalite.isAfter(LocalDateTime.now());
     }
+    public abstract long getDelaiReservations();
 }

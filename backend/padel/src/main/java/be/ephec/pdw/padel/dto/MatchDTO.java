@@ -13,10 +13,9 @@ public class MatchDTO {
     @AllArgsConstructor
     @Builder
     public static class PostInput{
-        Long id;
         String organisateur_matricule;
         Long terrainID;
         LocalDateTime date;
-        StatutMatch statut;
+        boolean estPublic;
     }
 }

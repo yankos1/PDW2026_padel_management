@@ -5,4 +5,9 @@ import jakarta.persistence.Entity;
 
 @Entity
 @DiscriminatorValue("LIBRE")
-public class MembreLibre extends Membre {}
+public class MembreLibre extends Membre {
+    @Override
+    public long getDelaiReservations() {
+        return 5;
+    }
+}

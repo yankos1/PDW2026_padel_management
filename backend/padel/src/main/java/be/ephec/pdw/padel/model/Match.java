@@ -1,5 +1,6 @@
 package be.ephec.pdw.padel.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -35,6 +36,7 @@ public class Match {
     private StatutMatch statut;
 
     @OneToMany(mappedBy = "match")
+    @JsonManagedReference
     private List<Reservation> reservations;
 
 }

@@ -1,11 +1,17 @@
 package be.ephec.pdw.padel.model;
 
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.time.LocalTime;
 import java.util.List;
 
 @Entity
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+@Builder
 public class Site {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

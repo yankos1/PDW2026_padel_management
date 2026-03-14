@@ -1,12 +1,19 @@
 package be.ephec.pdw.padel.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Entity
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+@Builder
 public class Reservation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -16,6 +23,7 @@ public class Reservation {
     private Membre membre;
 
     @ManyToOne
+    @JsonBackReference
     private Match match;
 
     private LocalDateTime dateReservation;

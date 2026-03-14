@@ -10,9 +10,14 @@ import java.util.List;
 
 public interface MatchRepository extends JpaRepository<Match,Long> {
 
+
     List<Match> findByTerrain(Terrain terrain);
 
     List<Match> findByDateHeureDebut(LocalDateTime dateHeureDebut);
 
+    List<Match> findByStatutAndEstPublic(StatutMatch statut, boolean estPublic);
 
+    boolean existsByTerrainAndDateHeureDebut(Terrain terrain, LocalDateTime dateHeureDebut);
+
+    long countByStatut(StatutMatch statutMatch);
 }

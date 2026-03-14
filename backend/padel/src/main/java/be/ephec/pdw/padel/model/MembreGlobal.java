@@ -5,4 +5,9 @@ import jakarta.persistence.Entity;
 
 @Entity
 @DiscriminatorValue("GLOBAL")
-public class MembreGlobal extends Membre {}
+public class MembreGlobal extends Membre {
+    @Override
+    public long getDelaiReservations() {
+        return 21;
+    }
+}
