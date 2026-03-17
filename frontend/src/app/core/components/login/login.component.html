@@ -1,0 +1,19 @@
+<mat-card>
+  <mat-card-header>
+    <h2>Login</h2>
+  </mat-card-header>
+
+<mat-card-content>
+  <form (ngSubmit)="login()">
+
+    <mat-form-field>
+      <mat-label>Matricule</mat-label>
+
+      <input matInput placeholder="Matricule" name="matricule" [(ngModel)]="matricule" required>
+    </mat-form-field>
+    <button mat-raised-button color="primary" type="submit">
+      Se connecter
+      </button>
+  </form>
+</mat-card-content>
+</mat-card>

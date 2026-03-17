@@ -1,9 +1,11 @@
 package be.ephec.pdw.padel.service;
 
+import be.ephec.pdw.padel.configuration.BusinessRuleException;
 import be.ephec.pdw.padel.dto.JoueurDTO;
 import be.ephec.pdw.padel.model.*;
 import be.ephec.pdw.padel.repositories.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -12,6 +14,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MatchService {
     private final MembreRepository membreRepository;
     private final TerrainRepository terrainRepository;
@@ -22,16 +25,18 @@ public class MatchService {
 
     public Match creerMatch(String matricule, Long idTerrain, LocalDateTime dateHeure, boolean estPublic) {
 
-        Membre membre = membreRepository.findById(matricule).orElseThrow(() -> new RuntimeException("Membre n'existe pas"));
+        Membre membre = membreRepository.findById(matricule)
+                .orElseThrow(() -> new BusinessRuleException("Membre n'existe pas"));
 
         if (membre.aUnePenaliteActive()) {
-            throw new RuntimeException("Le membre a une pénalité");
+            throw new BusinessRuleException("Le membre a une pénalité");
         }
 
-        Terrain terrain = terrainRepository.findById(idTerrain).orElseThrow(() -> new RuntimeException("Terrain introuvable"));
+        Terrain terrain = terrainRepository.findById(idTerrain)
+                .orElseThrow(() -> new BusinessRuleException("Terrain introuvable"));
 
         if (matchRepository.existsByTerrainAndDateHeureDebut(terrain, dateHeure)) {
-            throw new RuntimeException("Terrain déjà réservé à cette heure");
+            throw new BusinessRuleException("Terrain déjà réservé à cette heure");
         }
 
         verifierJourFermeture(terrain.getSite(), dateHeure);
@@ -55,8 +60,8 @@ public class MatchService {
                 .build();
 
         reservationRepository.save(reservation);
+        log.info("Match créé par {} sur terrain {} à {}", matricule, idTerrain, dateHeure);
         return match;
-
     }
 
     public List<Match> matchsDisponibles(){
@@ -72,7 +77,7 @@ public class MatchService {
 
     public List<JoueurDTO> joueursInscritMatch(Long Matchid){
         Match match = matchRepository.findById(Matchid)
-                .orElseThrow(() -> new RuntimeException("Match introuvable"));
+                .orElseThrow(() -> new BusinessRuleException("Match introuvable"));
 
         return match.getReservations()
                 .stream()
@@ -102,7 +107,7 @@ public class MatchService {
             nbJoeursInscrits = match.getReservations().size();
 
             // pénalité organisateur pour match non complet
-            if (nbJoeursInscrits > 4){
+            if (nbJoeursInscrits < 4){
                 Membre organisateur = match.getOrganisateur();
                 organisateur.setPenaliteActive(true);
                 organisateur.setFinPenalite(LocalDateTime.now().plusDays(1));
@@ -126,7 +131,7 @@ public class MatchService {
         LocalDateTime dateMin = LocalDateTime.now().plusDays(joursDelai);
 
         if(dateMatch.isBefore(dateMin)){
-            throw new RuntimeException("Ce membre doit réserver au moins " + joursDelai + " jours à l'avance");
+            throw new BusinessRuleException("Ce membre doit réserver au moins " + joursDelai + " jours à l'avance");
         }
     }
 
@@ -134,11 +139,11 @@ public class MatchService {
         LocalDate date = dateMatch.toLocalDate();
 
         if(jourFermetureRepository.existsByDate(date)){
-            throw new RuntimeException("Les sites sont fermé ce jour");
+            throw new BusinessRuleException("Les sites sont fermé ce jour");
         }
 
         if (jourFermetureRepository.existsBySiteAndDate(site, date)){
-            throw new RuntimeException("Ce site est fermé ce jour");
+            throw new BusinessRuleException("Ce site est fermé ce jour");
 
         }
     }
