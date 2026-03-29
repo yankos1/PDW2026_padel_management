@@ -1,9 +1,40 @@
-<h2>Matchs disponibles</h2>
+<h2 mat-headline-5>Matchs publiques disponibles</h2>
 
-<div *ngFor="let match of matchs">
+<div class="match-container">
+  @for (match of matchs; track match.id) {
 
-  Match {{match.id}} - {{match.dateHeureDebut}}
+    <mat-card class="match-card">
 
+      <mat-card-header>
+        <mat-card-title>Match #{{ match.id }}</mat-card-title>
+        <mat-card-subtitle>
+          {{ match.dateHeureDebut | date:'medium' }}
+        </mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        <p>
+          Participants :
+          <strong>{{ match.nbParticipants }}</strong>
+        </p>
+      </mat-card-content>
+
+      <mat-card-actions align="end">
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="rejoindreMatch(match)">
+          Rejoindre
+        </button>
+      </mat-card-actions>
+
+    </mat-card>
+
+  }
 </div>
 
-<p>Nombre de matchs: {{matchs.length}}</p>
+<mat-divider></mat-divider>
+
+<p class="match-count">
+  Nombre de matchs : <strong>{{ matchs.length }}</strong>
+</p>

@@ -13,4 +13,7 @@ export class AuthService {
       matricule: matricule,
     });
   }
+  getCurrentUser() {
+    return JSON.parse(localStorage.getItem('user') || '{}');
+  }
 }

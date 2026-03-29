@@ -2,6 +2,7 @@ package be.ephec.pdw.padel.service;
 
 import be.ephec.pdw.padel.configuration.BusinessRuleException;
 import be.ephec.pdw.padel.dto.JoueurDTO;
+import be.ephec.pdw.padel.dto.MatchReponseDTO;
 import be.ephec.pdw.padel.model.*;
 import be.ephec.pdw.padel.repositories.*;
 import lombok.RequiredArgsConstructor;
@@ -64,15 +65,22 @@ public class MatchService {
         return match;
     }
 
-    public List<Match> matchsDisponibles(){
+    public List<MatchReponseDTO> matchsDisponibles(){
 
         List<Match> matchs = matchRepository.findByStatutAndEstPublic(StatutMatch.PLANIFIE, true);
 
         matchs.forEach(this::mettreAJourEtatMatch);
 
+
         return matchs.stream()
                 .filter(m -> m.getReservations().size() < 4)
+                .map(m -> new MatchReponseDTO(
+                        m.getId(),
+                        m.getDateHeureDebut(),
+                        m.getReservations().size()
+                ))
                 .toList();
+
     }
 
     public List<JoueurDTO> joueursInscritMatch(Long Matchid){

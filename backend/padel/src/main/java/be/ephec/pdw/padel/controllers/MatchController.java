@@ -2,6 +2,7 @@ package be.ephec.pdw.padel.controllers;
 
 import be.ephec.pdw.padel.dto.JoueurDTO;
 import be.ephec.pdw.padel.dto.MatchDTO;
+import be.ephec.pdw.padel.dto.MatchReponseDTO;
 import be.ephec.pdw.padel.model.Match;
 import be.ephec.pdw.padel.service.MatchService;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,7 @@ public class MatchController {
     }
 
     @GetMapping("/disponibles")
-    public List<Match> matchsDisponibles(){
+    public List<MatchReponseDTO> matchsDisponibles(){
         return matchService.matchsDisponibles();
     }
 
