@@ -1,0 +1,57 @@
+.match-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.match-card {
+  border-radius: 12px;
+  padding: 8px;
+}
+
+mat-card-header {
+  margin-bottom: 10px;
+}
+
+mat-card-title {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+mat-card-subtitle {
+  font-size: 14px;
+  color: #666;
+}
+
+mat-card-content p {
+  font-size: 15px;
+  margin: 8px 0;
+}
+
+mat-card-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.match-count {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 16px;
+}
+.title {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 24px;
+  font-weight: bold;
+}
+.match-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.match-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}

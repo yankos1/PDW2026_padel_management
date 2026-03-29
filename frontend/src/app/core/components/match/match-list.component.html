@@ -1,7 +1,7 @@
-<h2 mat-headline-5>Matchs publiques disponibles</h2>
+<h2 class="title">Matchs publics disponibles</h2>
 
 <div class="match-container">
-  @for (match of matchs; track match.id) {
+  @for (match of matchs(); track match.id) {
 
     <mat-card class="match-card">
 
@@ -21,8 +21,7 @@
 
       <mat-card-actions align="end">
         <button
-          mat-raised-button
-          color="primary"
+          mat-raised-button color="primary"
           (click)="rejoindreMatch(match)">
           Rejoindre
         </button>
@@ -36,5 +35,5 @@
 <mat-divider></mat-divider>
 
 <p class="match-count">
-  Nombre de matchs : <strong>{{ matchs.length }}</strong>
+  Nombre de matchs : <strong>{{ matchs().length }}</strong>
 </p>

@@ -1,7 +1,7 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { MatchService } from '../../services/match.service';
-import { MatDivider } from '@angular/material/list';
+import {Component, OnInit, signal} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {MatchService} from '../../services/match.service';
+import {MatDivider} from '@angular/material/list';
 import {
   MatCard,
   MatCardActions,
@@ -10,7 +10,7 @@ import {
   MatCardSubtitle,
   MatCardTitle,
 } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
+import {MatButtonModule} from '@angular/material/button';
 
 @Component({
   selector: 'app-match-list',
@@ -27,21 +27,18 @@ import { MatButtonModule } from '@angular/material/button';
     MatButtonModule,
   ],
   templateUrl: './match-list.component.html',
+  styleUrls: ['./match-list.component.css'],
 })
 export class MatchListComponent implements OnInit {
-  matchs: any[] = [];
+  matchs = signal<any[]>([]);
 
-  constructor(
-    private matchService: MatchService,
-    private cdr: ChangeDetectorRef,
-  ) {}
+  constructor(private matchService: MatchService) {}
 
   ngOnInit() {
     this.matchService.getMatchDisponibles().subscribe((data) => {
       console.log('MATCHS:', data);
 
-      this.matchs = data;
-      this.cdr.detectChanges();
+      this.matchs.set(data);
     });
   }
 

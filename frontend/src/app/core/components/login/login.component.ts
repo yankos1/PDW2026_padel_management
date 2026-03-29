@@ -22,6 +22,7 @@ import { Router } from '@angular/router';
     MatFormFieldModule,
   ],
   templateUrl: './login.component.html',
+  styleUrls: ['./login.component.css'],
 })
 export class LoginComponent {
   matricule: string = '';

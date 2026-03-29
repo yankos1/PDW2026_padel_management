@@ -1,19 +1,32 @@
-<mat-card>
-  <mat-card-header>
-    <h2>Login</h2>
-  </mat-card-header>
+<div class="login-wrapper">
+  <mat-card class="login-card">
 
-<mat-card-content>
-  <form (ngSubmit)="login()">
+    <div class="login-header">
+      <div class="logo">🔐</div>
+      <h1>Login</h1>
+      <p>Veuillez vous connecter</p>
+    </div>
 
-    <mat-form-field>
-      <mat-label>Matricule</mat-label>
+    <mat-card-content>
+      <form (ngSubmit)="login()">
 
-      <input matInput placeholder="Matricule" name="matricule" [(ngModel)]="matricule" required>
-    </mat-form-field>
-    <button mat-raised-button color="primary" type="submit">
-      Se connecter
-      </button>
-  </form>
-</mat-card-content>
-</mat-card>
+        <div class="form-field">
+          <label>Matricule</label>
+          <input
+            matInput
+            placeholder="Matricule"
+            name="matricule"
+            [(ngModel)]="matricule"
+            required
+          />
+        </div>
+
+        <button class="btn-primary" type="submit">
+          Se connecter
+        </button>
+
+      </form>
+    </mat-card-content>
+
+  </mat-card>
+</div>

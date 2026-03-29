@@ -1,6 +1,5 @@
 package be.ephec.pdw.padel.dto;
 
-import be.ephec.pdw.padel.model.StatutMatch;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

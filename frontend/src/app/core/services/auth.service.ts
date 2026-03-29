@@ -13,7 +13,18 @@ export class AuthService {
       matricule: matricule,
     });
   }
-  getCurrentUser() {
-    return JSON.parse(localStorage.getItem('user') || '{}');
+
+  //TO DO later
+  // isLoggedIn(): boolean {
+  //   return !!localStorage.getItem('token');
+  // }
+
+  getUser() {
+    return JSON.parse(localStorage.getItem('user') || 'null');
+  }
+
+  logout() {
+    localStorage.removeItem('user');
+    window.location.href = '/login';
   }
 }

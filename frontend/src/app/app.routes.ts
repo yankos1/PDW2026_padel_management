@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { LoginComponent } from './core/components/login/login.component';
 import { MatchListComponent } from './core/components/match/match-list.component';
+import { authGuard } from './core/guards/auth-guard';
 
 export const routes: Routes = [
   {
@@ -15,5 +16,6 @@ export const routes: Routes = [
   {
     path: 'match',
     component: MatchListComponent,
-  },
+    canActivate: [authGuard]
+  }
 ];
