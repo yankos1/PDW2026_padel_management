@@ -30,8 +30,12 @@ public class MatchService {
         Membre membre = membreRepository.findById(matricule)
                 .orElseThrow(() -> new BusinessRuleException("Membre n'existe pas"));
 
+        // pénalité et dette
         if (membre.aUnePenaliteActive()) {
             throw new BusinessRuleException("Le membre a une pénalité");
+        }
+        if (membre.getSoldeDu() > 0) {
+            throw new BusinessRuleException("Le membre a un solde du de " + membre.getSoldeDu() + "€");
         }
 
         Terrain terrain = terrainRepository.findById(idTerrain)
@@ -73,11 +77,17 @@ public class MatchService {
         log.info("Nombre de matchs trouvés: {}", matchs.size());
 
         return matchs.stream()
-                .filter(m ->  reservationRepository.countByMatch(m) < 4)
+                .filter(m ->  m.getReservations()
+                        .stream()
+                        .filter(Reservation::isEstPayee)
+                        .count() < 4)
                 .map(m -> new MatchReponseDTO(
                         m.getId(),
                         m.getDateHeureDebut(),
-                        (int) reservationRepository.countByMatch(m)
+                        (int) m.getReservations()
+                                .stream()
+                                .filter(Reservation::isEstPayee)
+                                .count()
                 ))
                 .toList();
     }
@@ -118,7 +128,8 @@ public class MatchService {
             if (nbJoeursInscrits < 4){
                 Membre organisateur = match.getOrganisateur();
                 organisateur.setPenaliteActive(true);
-                organisateur.setFinPenalite(LocalDateTime.now().plusDays(1));
+                organisateur.setFinPenalite(LocalDateTime.now().plusDays(7));
+                membreRepository.save(organisateur);
             }
 
             // gestion du soldeDu

@@ -29,8 +29,9 @@ public class ReservationService {
 
         matchService.mettreAJourEtatMatch(match);
 
-        if (!match.isEstPublic())
-            throw new BusinessRuleException("Match est privé");
+        if (match.isEstPublic())
+            log.info("Match public");
+            //throw new BusinessRuleException("Impossible de rejoindre un match public sans payer");
 
         if (match.getStatut() == StatutMatch.ANNULE)
             throw new BusinessRuleException("Match annulé");
@@ -45,6 +46,11 @@ public class ReservationService {
         if (membre.aUnePenaliteActive())
             throw new BusinessRuleException("Le membre a une pénalité");
 
+        if (membre.getSoldeDu() > 0) {
+            throw new BusinessRuleException("Le membre a un solde du");
+        }
+
+
         Reservation reservation = Reservation.builder()
                 .match(match)
                 .membre(membre)
@@ -52,7 +58,7 @@ public class ReservationService {
                 .statut(StatutReservation.EN_ATTENTE)
                 .build();
 
-        if (nbJoueursInscrits == 3){
+        if (nbJoueursInscrits + 1 == 4){
             match.setStatut(StatutMatch.COMPLET);
             matchRepository.save(match);
         }
@@ -66,6 +72,7 @@ public class ReservationService {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new BusinessRuleException("reservation introuvable"));
 
+
         if (reservation.isEstPayee())
             throw new BusinessRuleException("reservation déja payée");
 
@@ -76,11 +83,38 @@ public class ReservationService {
             throw new BusinessRuleException("Impossible de payer un match annulé");
         }
 
+
+        long nbJoueurs;
+
+        if (match.isEstPublic()) {
+            nbJoueurs = match.getReservations()
+                    .stream()
+                    .filter(Reservation::isEstPayee)
+                    .count();
+        } else {
+            nbJoueurs = reservationRepository.countByMatch(match);
+        }
+
+        // gestion de dette
+        Membre membre = reservation.getMembre();
+        double montant = 15; // prix du match par personne si 4
+
+        if (membre.getSoldeDu() > 0) {
+            montant += membre.getSoldeDu();
+            membre.setSoldeDu(0);
+        }
+
         reservation.setEstPayee(true);
         reservation.setDatePaiement(LocalDateTime.now());
-        reservation.setMontant(15);// prix du match par personne si 4
+        reservation.setMontant(montant);
         reservation.setStatut(StatutReservation.CONFIRMEE);
 
+        if (nbJoueurs + 1 == 4) {
+            match.setStatut(StatutMatch.COMPLET);
+            matchRepository.save(match);
+        }
+
+        membreRepository.save(membre);
         log.info("Paiement effectué pour la réservation {}", reservationId);
         return  reservationRepository.save(reservation);
     }
