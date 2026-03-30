@@ -28,7 +28,8 @@
 
       <mat-card-actions>
         @if (!r.paye) {
-          <button mat-raised-button color="primary">
+          <button mat-raised-button color="primary"
+                  (click)="payerReservation(r.id)">
             Payer
           </button>
         }

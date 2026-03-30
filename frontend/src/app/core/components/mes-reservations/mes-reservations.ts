@@ -51,4 +51,18 @@ export class MesReservations {
       error: (err) => console.error(err),
     });
   }
+
+  payerReservation(id: number) {
+    this.reservationService.payerReservation(id).subscribe({
+      next: () => {
+        console.log('Paiement réussi');
+
+        this.ngOnInit();
+      },
+      error: (err) => {
+        console.error('Erreur paiement', err);
+        alert('Erreur lors du paiement');
+      }
+    });
+  }
 }

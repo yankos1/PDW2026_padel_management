@@ -16,4 +16,8 @@ export class ReservationService {
   getMesReservations(matricule: string) {
     return this.http.get<any[]>(`${this.api}/membre/${matricule}`);
   }
+
+  payerReservation(id: number) {
+    return this.http.put(`${this.api}/${id}/payer`, {});
+  }
 }
