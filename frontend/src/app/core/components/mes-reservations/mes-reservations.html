@@ -1,0 +1,40 @@
+<h2 class="title">Mes réservations</h2>
+
+<div class="match-container">
+
+  @if (reservations().length === 0) {
+    <p class="match-count">Aucune réservation</p>
+  }
+
+  @for (r of reservations(); track r.id) {
+    <mat-card class="match-card">
+
+      <mat-card-header>
+        <mat-card-title>Match #{{ r.match.id }}</mat-card-title>
+        <mat-card-subtitle>
+          {{ r.match.dateHeureDebut | date:'dd/MM/yyyy HH:mm' }}
+        </mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        <p>Participants : {{ r.match.nbParticipants }}/4</p>
+        <p>
+          Statut :
+          <strong>
+            {{ r.paye ? 'Payé' : 'Non payé' }}
+          </strong>
+        </p>
+      </mat-card-content>
+
+      <mat-card-actions>
+        @if (!r.paye) {
+          <button mat-raised-button color="primary">
+            Payer
+          </button>
+        }
+      </mat-card-actions>
+
+    </mat-card>
+  }
+
+</div>

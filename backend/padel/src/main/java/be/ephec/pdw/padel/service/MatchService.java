@@ -5,6 +5,7 @@ import be.ephec.pdw.padel.dto.JoueurDTO;
 import be.ephec.pdw.padel.dto.MatchReponseDTO;
 import be.ephec.pdw.padel.model.*;
 import be.ephec.pdw.padel.repositories.*;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -69,18 +70,16 @@ public class MatchService {
 
         List<Match> matchs = matchRepository.findByStatutAndEstPublic(StatutMatch.PLANIFIE, true);
 
-        matchs.forEach(this::mettreAJourEtatMatch);
-
+        log.info("Nombre de matchs trouvés: {}", matchs.size());
 
         return matchs.stream()
-                .filter(m -> m.getReservations().size() < 4)
+                .filter(m ->  reservationRepository.countByMatch(m) < 4)
                 .map(m -> new MatchReponseDTO(
                         m.getId(),
                         m.getDateHeureDebut(),
-                        m.getReservations().size()
+                        (int) reservationRepository.countByMatch(m)
                 ))
                 .toList();
-
     }
 
     public List<JoueurDTO> joueursInscritMatch(Long Matchid){
@@ -98,8 +97,9 @@ public class MatchService {
                 .toList();
     }
 
+    @Transactional
     public void mettreAJourEtatMatch(Match match){
-        long nbJoeursInscrits = match.getReservations().size();
+        long nbJoeursInscrits = reservationRepository.countByMatch(match);
         LocalDateTime veille = match.getDateHeureDebut().minusDays(1);
 
         if (LocalDateTime.now().isAfter(veille)) {
@@ -110,9 +110,9 @@ public class MatchService {
             }
 
             // enlever les joeurs non payé
-            match.getReservations().removeIf(reservation -> !reservation.isEstPayee());
+            reservationRepository.deleteByMatchAndEstPayeeFalse(match);
 
-            nbJoeursInscrits = match.getReservations().size();
+            nbJoeursInscrits = reservationRepository.countByMatch(match); //recalcul du nb joeurs
 
             // pénalité organisateur pour match non complet
             if (nbJoeursInscrits < 4){

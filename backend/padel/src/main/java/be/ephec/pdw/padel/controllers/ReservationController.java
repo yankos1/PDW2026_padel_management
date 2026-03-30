@@ -1,10 +1,13 @@
 package be.ephec.pdw.padel.controllers;
 
 import be.ephec.pdw.padel.dto.ReservationDTO;
+import be.ephec.pdw.padel.dto.ReservationReponseDTO;
 import be.ephec.pdw.padel.model.Reservation;
 import be.ephec.pdw.padel.service.ReservationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/reservation")
@@ -22,5 +25,10 @@ public class ReservationController {
     @PutMapping("/{id}/payer")
     public Reservation payerReservation(@PathVariable Long id){
         return reservationService.payerReservation(id);
+    }
+
+    @GetMapping("/membre/{matricule}")
+    public List<ReservationReponseDTO> getReservationsByMembre(@PathVariable String matricule) {
+        return reservationService.getReservationsByMembre(matricule);
     }
 }

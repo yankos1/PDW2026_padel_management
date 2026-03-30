@@ -34,8 +34,7 @@ export class LoginComponent {
   login() {
     this.authService.login(this.matricule).subscribe((user) => {
       console.log('utilisateur connecté:', user);
-      localStorage.setItem('user', JSON.stringify(user));
-
+      this.authService.setUser(user);
       this.router.navigate(['/match']);
     });
   }

@@ -5,10 +5,18 @@ import be.ephec.pdw.padel.model.Membre;
 import be.ephec.pdw.padel.model.Reservation;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
+
 public interface ReservationRepository extends JpaRepository<Reservation,Long> {
     long countByMatch(Match match);
 
     boolean existsByMatchAndMembre(Match match, Membre membre);
 
     long countByEstPayeeTrue();
+
+    Long id(Long id);
+
+    List<Reservation> findByMembre(Membre membre);
+
+    void deleteByMatchAndEstPayeeFalse(Match match);
 }

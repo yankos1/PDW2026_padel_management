@@ -14,13 +14,17 @@ export class AuthService {
     });
   }
 
-  //TO DO later
-  // isLoggedIn(): boolean {
-  //   return !!localStorage.getItem('token');
-  // }
+  setUser(user: Membre) {
+    localStorage.setItem('user', JSON.stringify(user));
+  }
 
   getUser() {
     return JSON.parse(localStorage.getItem('user') || 'null');
+  }
+
+  getMatricule(): string | null {
+    const user = this.getUser();
+    return user ? user.matricule : null;
   }
 
   logout() {
@@ -28,3 +32,7 @@ export class AuthService {
     window.location.href = '/login';
   }
 }
+//TO DO later
+// isLoggedIn(): boolean {
+//   return !!localStorage.getItem('token');
+// }

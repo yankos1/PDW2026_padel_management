@@ -1,6 +1,8 @@
 package be.ephec.pdw.padel.service;
 
 import be.ephec.pdw.padel.configuration.BusinessRuleException;
+import be.ephec.pdw.padel.dto.MatchReponseDTO;
+import be.ephec.pdw.padel.dto.ReservationReponseDTO;
 import be.ephec.pdw.padel.model.*;
 import be.ephec.pdw.padel.repositories.MatchRepository;
 import be.ephec.pdw.padel.repositories.MembreRepository;
@@ -10,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -32,7 +35,7 @@ public class ReservationService {
         if (match.getStatut() == StatutMatch.ANNULE)
             throw new BusinessRuleException("Match annulé");
 
-        long nbJoueursInscrits = match.getReservations().size();
+        long nbJoueursInscrits = reservationRepository.countByMatch(match);
         if (nbJoueursInscrits >= 4)
             throw new BusinessRuleException("Match complet");
 
@@ -80,5 +83,21 @@ public class ReservationService {
 
         log.info("Paiement effectué pour la réservation {}", reservationId);
         return  reservationRepository.save(reservation);
+    }
+
+    public List<ReservationReponseDTO> getReservationsByMembre(String matricule) {
+        Membre membre = membreRepository.findById(matricule)
+                .orElseThrow(() -> new BusinessRuleException("Membre introuvable"));
+
+        return reservationRepository.findByMembre(membre)
+                .stream()
+                .map(reservation -> new ReservationReponseDTO(reservation.getId(),
+                        new MatchReponseDTO(reservation.getMatch().getId(),
+                                reservation.getMatch().getDateHeureDebut(),
+                                reservation.getMatch().getReservations().size()
+                        ),
+                        reservation.isEstPayee()
+                ))
+                .toList();
     }
 }
