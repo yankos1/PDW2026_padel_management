@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 public record MatchReponseDTO(
         Long id,
         LocalDateTime dateHeureDebut,
-        int nbParticipants
+        int nbParticipants,
+        String terrain,
+        boolean estPublic
 ) {
 }

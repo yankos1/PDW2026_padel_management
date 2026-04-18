@@ -1,0 +1,82 @@
+<div class="match-container">
+
+  <h2 class="title">Créer un match</h2>
+
+  <mat-card class="match-card">
+
+    <form (ngSubmit)="createMatch()" #form="ngForm">
+
+      <!-- DATE -->
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Date du match</mat-label>
+        <input matInput type="date" [(ngModel)]="date" name="date" required>
+        @if (!date && form.submitted) {
+          <mat-error>La date est obligatoire</mat-error>
+        }
+      </mat-form-field>
+
+      <!-- HEURE -->
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Heure</mat-label>
+        <input matInput type="time" [(ngModel)]="heure" name="heure" required>
+        @if (!heure && form.submitted) {
+          <mat-error>L'heure est obligatoire</mat-error>
+        }
+      </mat-form-field>
+
+      <!-- TERRAIN -->
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Choisir un terrain</mat-label>
+
+        <mat-select [(ngModel)]="terrainId" name="terrainId" required>
+
+          @if (terrains().length === 0) {
+            <mat-option >Aucun terrain disponible</mat-option>
+          }
+
+          @for (terrain of terrains(); track terrain.id) {
+            <mat-option [value]="terrain.id">
+              {{ terrain.nom }}
+            </mat-option>
+          }
+
+        </mat-select>
+
+        @if (!terrainId && form.submitted) {
+          <mat-error>Le terrain est obligatoire</mat-error>
+        }
+
+      </mat-form-field>
+
+      <!-- TYPE -->
+      <mat-form-field appearance="outline" class="w-full">
+        <mat-label>Type de match</mat-label>
+
+        <mat-select [(ngModel)]="isPublic" name="public">
+          <mat-option [value]="true">Public</mat-option>
+          <mat-option [value]="false">Privé</mat-option>
+        </mat-select>
+
+      </mat-form-field>
+
+      <!-- ERREUR -->
+      @if (error()) {
+        <p class="error">{{ error() }}</p>
+      }
+
+      <!-- BOUTON -->
+      <button
+        mat-raised-button
+        color="primary"
+        class="w-full mt-4"
+        type="submit"
+        [disabled]="form.invalid"
+      >
+        Créer le match
+      </button>
+
+    </form>
+
+  </mat-card>
+
+</div>

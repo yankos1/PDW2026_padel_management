@@ -23,7 +23,7 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final MatchService matchService;
 
-    public Reservation rejoindreMatch (String matricule, Long matchId){
+    public Reservation rejoindreMatch(String matricule, Long matchId) {
         Match match = matchRepository.findById(matchId).orElseThrow();
         Membre membre = membreRepository.findById(matricule).orElseThrow();
 
@@ -31,7 +31,7 @@ public class ReservationService {
 
         if (match.isEstPublic())
             log.info("Match public");
-            //throw new BusinessRuleException("Impossible de rejoindre un match public sans payer");
+        //throw new BusinessRuleException("Impossible de rejoindre un match public sans payer");
 
         if (match.getStatut() == StatutMatch.ANNULE)
             throw new BusinessRuleException("Match annulé");
@@ -58,7 +58,7 @@ public class ReservationService {
                 .statut(StatutReservation.EN_ATTENTE)
                 .build();
 
-        if (nbJoueursInscrits + 1 == 4){
+        if (nbJoueursInscrits + 1 == 4) {
             match.setStatut(StatutMatch.COMPLET);
             matchRepository.save(match);
         }
@@ -68,7 +68,7 @@ public class ReservationService {
         return reservationRepository.save(reservation);
     }
 
-    public Reservation payerReservation(Long reservationId){
+    public Reservation payerReservation(Long reservationId) {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new BusinessRuleException("reservation introuvable"));
 
@@ -79,7 +79,7 @@ public class ReservationService {
         Match match = reservation.getMatch();
         matchService.mettreAJourEtatMatch(match);
 
-        if(match.getStatut() == StatutMatch.ANNULE){
+        if (match.getStatut() == StatutMatch.ANNULE) {
             throw new BusinessRuleException("Impossible de payer un match annulé");
         }
 
@@ -116,7 +116,7 @@ public class ReservationService {
 
         membreRepository.save(membre);
         log.info("Paiement effectué pour la réservation {}", reservationId);
-        return  reservationRepository.save(reservation);
+        return reservationRepository.save(reservation);
     }
 
     public List<ReservationReponseDTO> getReservationsByMembre(String matricule) {
@@ -125,10 +125,13 @@ public class ReservationService {
 
         return reservationRepository.findByMembre(membre)
                 .stream()
-                .map(reservation -> new ReservationReponseDTO(reservation.getId(),
+                .map(reservation ->
+                        new ReservationReponseDTO(reservation.getId(),
                         new MatchReponseDTO(reservation.getMatch().getId(),
                                 reservation.getMatch().getDateHeureDebut(),
-                                reservation.getMatch().getReservations().size()
+                                reservation.getMatch().getReservations().size(),
+                                reservation.getMatch().getTerrain().getNom(),
+                                reservation.getMatch().isEstPublic()
                         ),
                         reservation.isEstPayee()
                 ))

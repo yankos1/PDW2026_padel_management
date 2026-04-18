@@ -87,7 +87,9 @@ public class MatchService {
                         (int) m.getReservations()
                                 .stream()
                                 .filter(Reservation::isEstPayee)
-                                .count()
+                                .count(),
+                        m.getTerrain().getNom(),
+                        m.isEstPublic()
                 ))
                 .toList();
     }

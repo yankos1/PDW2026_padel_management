@@ -54,6 +54,7 @@ mat-card-actions {
   font-weight: bold;
 }
 .match-card {
+  border-radius: 12px !important;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
