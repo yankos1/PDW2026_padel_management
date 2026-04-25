@@ -1,8 +1,7 @@
 package be.ephec.pdw.padel.controllers;
 
-import be.ephec.pdw.padel.model.Reservation;
-import be.ephec.pdw.padel.model.Site;
-import be.ephec.pdw.padel.model.StatutMatch;
+import be.ephec.pdw.padel.configuration.BusinessRuleException;
+import be.ephec.pdw.padel.model.*;
 import be.ephec.pdw.padel.repositories.MatchRepository;
 import be.ephec.pdw.padel.repositories.MembreRepository;
 import be.ephec.pdw.padel.repositories.ReservationRepository;
@@ -10,6 +9,7 @@ import be.ephec.pdw.padel.repositories.TerrainRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
@@ -26,8 +26,20 @@ public class AdminController {
     private final TerrainRepository terrainRepository;
 
     @GetMapping("/matchs")
-    public long nombreMatchs(){
+    public long nombreMatchs(@RequestParam String matricule){
+
+        Membre membre = membreRepository.findById(matricule)
+                .orElseThrow();
+
+        CheckAdmin(membre);
+
         return matchRepository.count();
+    }
+
+    private void CheckAdmin(Membre membre) {
+        if(membre.getRole() == Role.USER){
+            throw new BusinessRuleException("Accès refusé");
+        }
     }
 
     @GetMapping("/ca")

@@ -20,7 +20,7 @@ import { MatSidenav, MatSidenavContainer, MatSidenavContent } from '@angular/mat
 export class Navbar {
   user: any;
 
-  constructor(private authService: AuthService) {
+  constructor(public authService: AuthService) {
     this.user = this.authService.getUser();
   }
 

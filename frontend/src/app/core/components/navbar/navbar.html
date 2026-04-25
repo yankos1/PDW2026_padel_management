@@ -12,6 +12,10 @@
       <button mat-button routerLink="/match">Matchs</button>
       <button mat-button routerLink="/mes-reservations">Mes réservations</button>
       <button mat-button routerLink="/create-match">Créer un match</button>
+      @if (authService.isAdmin()) {
+        <button mat-button routerLink="/admin">Admin</button>
+      }
+
 
 
     </div>

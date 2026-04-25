@@ -31,6 +31,24 @@ export class AuthService {
     localStorage.removeItem('user');
     window.location.href = '/login';
   }
+
+  getRole(): string | null {
+    const user = this.getUser();
+    return user ? user.role : null;
+  }
+
+  isAdmin():boolean{
+    const role = this.getRole();
+    return role == 'ADMIN_GLOBAL' || role == 'ADMIN_SITE';
+  }
+
+  isAdminGlobal():boolean{
+    return this.getRole() == 'ADMIN_GLOBAL';
+  }
+
+  isLoggedIn(): boolean {
+return !!localStorage.getItem('token');
+}
 }
 //TO DO later
 // isLoggedIn(): boolean {

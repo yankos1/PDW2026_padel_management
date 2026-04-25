@@ -22,6 +22,9 @@ public abstract class Membre {
     private boolean penaliteActive;
     private LocalDateTime finPenalite;
 
+    @Enumerated(EnumType.STRING)
+    private Role role;
+
     public boolean aUnePenaliteActive() {
         return penaliteActive && finPenalite != null  && finPenalite.isAfter(LocalDateTime.now());
     }
