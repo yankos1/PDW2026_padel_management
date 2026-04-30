@@ -4,13 +4,15 @@ import be.ephec.pdw.padel.configuration.BusinessRuleException;
 import be.ephec.pdw.padel.dto.JoueurDTO;
 import be.ephec.pdw.padel.dto.MatchReponseDTO;
 import be.ephec.pdw.padel.model.*;
-import be.ephec.pdw.padel.repositories.*;
+import be.ephec.pdw.padel.repositories.MatchRepository;
+import be.ephec.pdw.padel.repositories.MembreRepository;
+import be.ephec.pdw.padel.repositories.ReservationRepository;
+import be.ephec.pdw.padel.repositories.TerrainRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -22,7 +24,8 @@ public class MatchService {
     private final TerrainRepository terrainRepository;
     private final MatchRepository matchRepository;
     private final ReservationRepository reservationRepository;
-    private final JourFermetureRepository jourFermetureRepository;
+    private final TerrainService terrainService;
+
 
 
     public Match creerMatch(String matricule, Long idTerrain, LocalDateTime dateHeure, boolean estPublic) {
@@ -45,7 +48,7 @@ public class MatchService {
             throw new BusinessRuleException("Terrain déjà réservé à cette heure");
         }
 
-        verifierJourFermeture(terrain.getSite(), dateHeure);
+        terrainService.verifierJourFermeture(terrain.getSite(), dateHeure);
         validerDelaiReservation(membre, dateHeure);
 
         Match match = Match.builder()
@@ -153,19 +156,6 @@ public class MatchService {
 
         if(dateMatch.isBefore(dateMin)){
             throw new BusinessRuleException("Ce membre doit réserver au moins " + joursDelai + " jours à l'avance");
-        }
-    }
-
-    private void verifierJourFermeture(Site site, LocalDateTime dateMatch){
-        LocalDate date = dateMatch.toLocalDate();
-
-        if(jourFermetureRepository.existsByDate(date)){
-            throw new BusinessRuleException("Les sites sont fermé ce jour");
-        }
-
-        if (jourFermetureRepository.existsBySiteAndDate(site, date)){
-            throw new BusinessRuleException("Ce site est fermé ce jour");
-
         }
     }
 

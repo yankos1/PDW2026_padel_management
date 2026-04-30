@@ -7,9 +7,11 @@ import be.ephec.pdw.padel.dto.TerrainDTO;
 import be.ephec.pdw.padel.model.Match;
 import be.ephec.pdw.padel.repositories.TerrainRepository;
 import be.ephec.pdw.padel.service.MatchService;
+import be.ephec.pdw.padel.service.TerrainService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -18,6 +20,7 @@ import java.util.List;
 public class MatchController {
 
     private final MatchService matchService;
+    private final TerrainService terrainService;
     private final TerrainRepository terrainRepository;
 
     @PostMapping
@@ -40,22 +43,39 @@ public class MatchController {
     }
 
     @GetMapping("/disponibles")
-    public List<MatchReponseDTO> matchsDisponibles(){
+    public List<MatchReponseDTO> matchsDisponibles() {
         return matchService.matchsDisponibles();
     }
 
     @GetMapping("/{id}/joueurs")
-    public List<JoueurDTO> joueursInscrits(@PathVariable Long id){
+    public List<JoueurDTO> joueursInscrits(@PathVariable Long id) {
         return matchService.joueursInscritMatch(id);
     }
 
     @GetMapping("/terrains")
-    public List<TerrainDTO> getTerrains(){
+    public List<TerrainDTO> getTerrains() {
         return terrainRepository.findAll()
                 .stream()
-                .map(t -> new TerrainDTO(t.getId(),t.getNom()))
+                .map(t -> new TerrainDTO(t.getId(), t.getNom(), t.getSite().getHeureOuverture().toString(), t.getSite().getHeureFermeture().toString()))
                 .toList();
     }
 
+    @GetMapping("/terrains/disponibles")
+    public List<TerrainDTO> getTerrainsDisponibles(
+            @RequestParam LocalDate date
+    ) {
+        return terrainService.getTerrainsDisponibles(date);
+    }
+    @GetMapping("/terrains/disponibles-par-creneau")
+    public List<TerrainDTO> getTerrainsDisponiblesParCreneau(
+            @RequestParam LocalDate date,
+            @RequestParam String heure
+    ) {
+        return terrainService.getTerrainsDisponiblesParCreneau(date, heure);
+    }
 
+    @GetMapping("/creneaux-disponibles")
+    public List<String> getCreneauxDisponibles(@RequestParam LocalDate date) {
+        return terrainService.getCreneauxDisponibles(date);
+    }
 }

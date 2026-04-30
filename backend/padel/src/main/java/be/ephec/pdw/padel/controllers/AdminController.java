@@ -43,7 +43,11 @@ public class AdminController {
     }
 
     @GetMapping("/ca")
-    public double chiffreAffaires(){
+    public double chiffreAffaires(@RequestParam String matricule){
+        Membre membre = membreRepository.findById(matricule)
+                .orElseThrow();
+
+        CheckAdmin(membre);
 
         long reservationsPayees = reservationRepository.countByEstPayeeTrue();
 
@@ -51,22 +55,38 @@ public class AdminController {
     }
 
     @GetMapping("/membres")
-    public long nombreMembres(){
+    public long nombreMembres(@RequestParam String matricule){
+        Membre membre = membreRepository.findById(matricule)
+                .orElseThrow();
+
+        CheckAdmin(membre);
         return membreRepository.count();
     }
 
     @GetMapping("/terrains")
-    public long nombreTerrains(){
+    public long nombreTerrains(@RequestParam String matricule){
+        Membre membre = membreRepository.findById(matricule)
+                .orElseThrow();
+
+        CheckAdmin(membre);
         return terrainRepository.count();
     }
 
     @GetMapping("/matchs-complets")
-    public long matchsComplets(){
+    public long matchsComplets(@RequestParam String matricule){
+        Membre membre = membreRepository.findById(matricule)
+                .orElseThrow();
+
+        CheckAdmin(membre);
         return matchRepository.countByStatut((StatutMatch.COMPLET));
     }
 
     @GetMapping("/taux-remplissage")
-    public double tauxRemplissage(){
+    public double tauxRemplissage(@RequestParam String matricule){
+        Membre membre = membreRepository.findById(matricule)
+                .orElseThrow();
+
+        CheckAdmin(membre);
 
         long totalPlaces = matchRepository.count() * 4;
 
@@ -78,7 +98,11 @@ public class AdminController {
     }
 
     @GetMapping("/revenus-par-site")
-    public Map<String, Double> revenusParSite(){
+    public Map<String, Double> revenusParSite(@RequestParam String matricule){
+        Membre membre = membreRepository.findById(matricule)
+                .orElseThrow();
+
+        CheckAdmin(membre);
 
         Map<String, Double> revenus = new HashMap<>();
         List<Reservation> reservations = reservationRepository.findAll();

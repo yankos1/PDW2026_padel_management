@@ -5,7 +5,8 @@ import { HttpClient } from '@angular/common/http';
   providedIn: 'root',
 })
 export class ReservationService {
-  private api = 'http://localhost:8080/reservation';
+  private api = '/api/reservation';
+
 
   constructor(private http: HttpClient) {}
 

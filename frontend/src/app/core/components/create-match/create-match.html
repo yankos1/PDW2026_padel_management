@@ -9,26 +9,51 @@
       <!-- DATE -->
       <mat-form-field appearance="outline" class="w-full">
         <mat-label>Date du match</mat-label>
-        <input matInput type="date" [(ngModel)]="date" name="date" required>
+        <input matInput type="date"
+               [(ngModel)]="date"
+               (change)="onDateChange()"
+               name="date"
+               required>
         @if (!date && form.submitted) {
           <mat-error>La date est obligatoire</mat-error>
         }
       </mat-form-field>
 
-      <!-- HEURE -->
+      <!-- CRENEAU -->
       <mat-form-field appearance="outline" class="w-full">
-        <mat-label>Heure</mat-label>
-        <input matInput type="time" [(ngModel)]="heure" name="heure" required>
-        @if (!heure && form.submitted) {
-          <mat-error>L'heure est obligatoire</mat-error>
+        <mat-label>Heure du match</mat-label>
+
+        <mat-select [(ngModel)]="heureSelected"
+                    (selectionChange)="onSlotChange()"
+                    name="slot"
+                    required>
+
+          @if (slots.length === 0) {
+            <mat-option disabled>Aucun créneau disponible</mat-option>
+          }
+
+          @for (slot of slots; track slot) {
+            <mat-option [value]="slot">
+              {{ slot }} - {{ add90min(slot) }}
+            </mat-option>
+          }
+
+        </mat-select>
+
+        @if (!heureSelected && form.submitted) {
+          <mat-error>Le créneau est obligatoire</mat-error>
         }
+
       </mat-form-field>
 
       <!-- TERRAIN -->
       <mat-form-field appearance="outline" class="w-full">
         <mat-label>Choisir un terrain</mat-label>
 
-        <mat-select [(ngModel)]="terrainId" name="terrainId" required>
+        <mat-select [(ngModel)]="terrainId"
+                    name="terrainId"
+                    (selectionChange)="onTerrainChange()"
+                    required>
 
           @if (terrains().length === 0) {
             <mat-option >Aucun terrain disponible</mat-option>

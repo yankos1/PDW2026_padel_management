@@ -4,7 +4,8 @@ import { Membre } from '../models/membre';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private api = 'http://localhost:8080/auth';
+  private api = '/api/auth';
+
 
   constructor(private http: HttpClient) {}
 

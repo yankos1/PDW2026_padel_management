@@ -1,8 +1,16 @@
-import { Component, OnInit } from '@angular/core';
-import {AdminService} from '../../services/admin.service';
-import {AuthService} from '../../services/auth.service';
-import {DecimalPipe, KeyValuePipe} from '@angular/common';
-import {MatCard, MatCardContent, MatCardHeader, MatCardSubtitle, MatCardTitle} from '@angular/material/card';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { AdminService } from '../../services/admin.service';
+import { AuthService } from '../../services/auth.service';
+import { DecimalPipe, KeyValuePipe } from '@angular/common';
+
+import {
+  MatCard,
+  MatCardContent,
+  MatCardHeader,
+  MatCardSubtitle,
+  MatCardTitle,
+} from '@angular/material/card';
+import { catchError, combineLatest, of } from 'rxjs';
 
 @Component({
   selector: 'app-admin',
@@ -32,6 +40,7 @@ export class Admin implements OnInit {
   constructor(
     private adminService: AdminService,
     public authService: AuthService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
@@ -49,39 +58,29 @@ export class Admin implements OnInit {
       return;
     }
 
-    this.adminService.getMatchs(matricule).subscribe({
-      next: (res) => (this.matchs = res),
-      error: () => (this.error = 'Erreur chargement matchs'),
-    });
-
-    this.adminService.getCA(matricule).subscribe({
-      next: (res) => (this.ca = res),
-      error: () => (this.error = 'Erreur CA'),
-    });
-
-    this.adminService.getMembres(matricule).subscribe({
-      next: (res) => (this.membres = res),
-      error: () => (this.error = 'Erreur membres'),
-    });
-
-    this.adminService.getTerrains(matricule).subscribe({
-      next: (res) => (this.terrains = res),
-      error: () => (this.error = 'Erreur terrains'),
-    });
-
-    this.adminService.getTauxRemplissage(matricule).subscribe({
-      next: (res) => (this.taux = res),
-      error: () => (this.error = 'Erreur taux'),
-    });
-
-    this.adminService.getRevenusParSite(matricule).subscribe({
-      next: (res) => {
-        this.revenus = res;
+    combineLatest([
+      this.adminService.getMatchs(matricule).pipe(catchError(() => of(0))),
+      this.adminService.getCA(matricule).pipe(catchError(() => of(0))),
+      this.adminService.getMembres(matricule).pipe(catchError(() => of(0))),
+      this.adminService.getTerrains(matricule).pipe(catchError(() => of(0))),
+      this.adminService.getTauxRemplissage(matricule).pipe(catchError(() => of(0))),
+      this.adminService.getRevenusParSite(matricule).pipe(catchError(() => of({}))),
+    ]).subscribe({
+      next: ([matchs, ca, membres, terrains, taux, revenus]) => {
+        this.matchs = matchs;
+        this.ca = ca;
+        this.membres = membres;
+        this.terrains = terrains;
+        this.taux = taux;
+        this.revenus = revenus;
         this.loading = false;
+        this.cdr.detectChanges();
       },
-      error: () => {
-        this.error = 'Erreur revenus';
+      error: (err) => {
+        console.error(err);
+        this.error = 'Erreur globale';
         this.loading = false;
+        this.cdr.detectChanges();
       },
     });
   }
