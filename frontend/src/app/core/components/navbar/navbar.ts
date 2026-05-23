@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { MatButton } from '@angular/material/button';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { MatSidenav, MatSidenavContainer, MatSidenavContent } from '@angular/material/sidenav';
 
@@ -13,9 +13,11 @@ import { MatSidenav, MatSidenavContainer, MatSidenavContent } from '@angular/mat
     MatSidenav,
     MatSidenavContent,
     RouterOutlet,
+    RouterLinkActive,
   ],
   templateUrl: './navbar.html',
   styleUrl: './navbar.css',
+  standalone: true,
 })
 export class Navbar {
   user: any;

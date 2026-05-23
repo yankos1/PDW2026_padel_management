@@ -6,12 +6,18 @@ import {Reservation} from './core/components/reservation/reservation';
 import { MesReservations } from './core/components/mes-reservations/mes-reservations';
 import { CreateMatch } from './core/components/create-match/create-match';
 import { Admin } from './core/components/admin/admin';
+import { Home } from './core/components/home/home';
 
 export const routes: Routes = [
   {
     path: '',
     redirectTo: 'login',
     pathMatch: 'full',
+  },
+  {
+    path: 'home',
+    component: Home,
+    canActivate: [authGuard]
   },
   {
     path: 'login',

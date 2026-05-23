@@ -35,7 +35,7 @@ export class LoginComponent {
     this.authService.login(this.matricule).subscribe((user) => {
       console.log('utilisateur connecté:', user);
       this.authService.setUser(user);
-      this.router.navigate(['/match']);
+      this.router.navigate(['/home']);
     });
   }
 }
