@@ -5,6 +5,8 @@ import be.ephec.pdw.padel.dto.MatchDTO;
 import be.ephec.pdw.padel.dto.MatchReponseDTO;
 import be.ephec.pdw.padel.dto.TerrainDTO;
 import be.ephec.pdw.padel.model.Match;
+import be.ephec.pdw.padel.model.Site;
+import be.ephec.pdw.padel.repositories.SiteRepository;
 import be.ephec.pdw.padel.repositories.TerrainRepository;
 import be.ephec.pdw.padel.service.MatchService;
 import be.ephec.pdw.padel.service.TerrainService;
@@ -22,6 +24,7 @@ public class MatchController {
     private final MatchService matchService;
     private final TerrainService terrainService;
     private final TerrainRepository terrainRepository;
+    private final SiteRepository siteRepository;
 
     @PostMapping
     public MatchReponseDTO createMatch(@RequestBody MatchDTO.PostInput input) {
@@ -52,6 +55,10 @@ public class MatchController {
         return matchService.joueursInscritMatch(id);
     }
 
+    /************
+     * Terrains
+     *********/
+
     @GetMapping("/terrains")
     public List<TerrainDTO> getTerrains() {
         return terrainRepository.findAll()
@@ -69,13 +76,43 @@ public class MatchController {
     @GetMapping("/terrains/disponibles-par-creneau")
     public List<TerrainDTO> getTerrainsDisponiblesParCreneau(
             @RequestParam LocalDate date,
-            @RequestParam String heure
+            @RequestParam String heure,
+            @RequestParam Long siteId
     ) {
-        return terrainService.getTerrainsDisponiblesParCreneau(date, heure);
+        return terrainService.getTerrainsDisponiblesParCreneau(date, heure, siteId);
     }
+
+    @GetMapping("/sites/{siteId}/terrains")
+    public List<TerrainDTO> getTerrainsBySite(@PathVariable Long siteId) {
+
+        return terrainRepository.findBySiteId(siteId)
+                .stream()
+                .map(t -> new TerrainDTO(
+                        t.getId(),
+                        t.getNom(),
+                        t.getSite().getHeureOuverture().toString(),
+                        t.getSite().getHeureFermeture().toString()
+                ))
+                .toList();
+    }
+
+
+    /************
+     * Créneaux
+     *********/
 
     @GetMapping("/creneaux-disponibles")
     public List<String> getCreneauxDisponibles(@RequestParam LocalDate date) {
         return terrainService.getCreneauxDisponibles(date);
     }
+
+    /************
+     * Sites
+     *********/
+
+    @GetMapping("/sites")
+    public List<Site> getSites() {
+        return siteRepository.findAll();
+    }
+
 }

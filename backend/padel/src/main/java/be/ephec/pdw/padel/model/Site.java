@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.time.LocalTime;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 @Entity
 @AllArgsConstructor
@@ -21,6 +22,7 @@ public class Site {
     private LocalTime heureFermeture;
 
     @OneToMany(mappedBy = "site")
+    @JsonManagedReference
     private List<Terrain> terrains;
     @OneToMany(mappedBy = "site")
     private List<JourFermeture> jourFermeture;

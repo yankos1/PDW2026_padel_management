@@ -53,11 +53,11 @@ public class TerrainService {
                 .toList();
     }
 
-    public List<TerrainDTO> getTerrainsDisponiblesParCreneau(LocalDate date, String heure) {
+    public List<TerrainDTO> getTerrainsDisponiblesParCreneau(LocalDate date, String heure, Long siteId) {
 
         LocalTime time = LocalTime.parse(heure);
 
-        return terrainRepository.findAll().stream()
+        return terrainRepository.findBySiteId(siteId).stream()
                 .filter(t -> !matchRepository.existsByTerrainAndDateHeureDebut(
                         t,
                         LocalDateTime.of(date, time)

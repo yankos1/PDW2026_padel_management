@@ -1,6 +1,6 @@
-export interface Site{
-  id:number;
-  nom:string;
-  heureOuverture:string;
-  heureFermeture:string;
+export interface Site {
+  id: number;
+  name: string;
+  heureOuverture: string;
+  heureFermeture: string;
 }

@@ -2,6 +2,7 @@ package be.ephec.pdw.padel.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 @Entity
 @AllArgsConstructor
@@ -15,5 +16,6 @@ public class Terrain {
     private String nom;
 
     @ManyToOne
+    @JsonBackReference
     private Site site;
 }

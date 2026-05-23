@@ -9,24 +9,65 @@
       <!-- DATE -->
       <mat-form-field appearance="outline" class="w-full">
         <mat-label>Date du match</mat-label>
-        <input matInput type="date"
-               [(ngModel)]="date"
-               (change)="onDateChange()"
-               name="date"
-               required>
+
+        <input
+          matInput
+          type="date"
+          [(ngModel)]="date"
+          (change)="onDateChange()"
+          name="date"
+          required
+        >
+
         @if (!date && form.submitted) {
           <mat-error>La date est obligatoire</mat-error>
         }
+
+      </mat-form-field>
+
+      <!-- SITE -->
+      <mat-form-field appearance="outline" class="w-full">
+
+        <mat-label>Choisir un site</mat-label>
+
+        <mat-select
+          [(ngModel)]="siteId"
+          name="siteId"
+          (selectionChange)="onSiteChange()"
+          [disabled]="!date"
+          required
+        >
+
+          @if (sites().length === 0) {
+            <mat-option disabled>Aucun site disponible</mat-option>
+          }
+
+          @for (site of sites(); track site.id) {
+            <mat-option [value]="site.id">
+              {{ site.name }}
+            </mat-option>
+          }
+
+        </mat-select>
+
+        @if (!siteId && form.submitted) {
+          <mat-error>Le site est obligatoire</mat-error>
+        }
+
       </mat-form-field>
 
       <!-- CRENEAU -->
       <mat-form-field appearance="outline" class="w-full">
+
         <mat-label>Heure du match</mat-label>
 
-        <mat-select [(ngModel)]="heureSelected"
-                    (selectionChange)="onSlotChange()"
-                    name="slot"
-                    required>
+        <mat-select
+          [(ngModel)]="heureSelected"
+          (selectionChange)="onSlotChange()"
+          name="slot"
+          [disabled]="!siteId"
+          required
+        >
 
           @if (slots.length === 0) {
             <mat-option disabled>Aucun créneau disponible</mat-option>
@@ -48,15 +89,19 @@
 
       <!-- TERRAIN -->
       <mat-form-field appearance="outline" class="w-full">
+
         <mat-label>Choisir un terrain</mat-label>
 
-        <mat-select [(ngModel)]="terrainId"
-                    name="terrainId"
-                    (selectionChange)="onTerrainChange()"
-                    required>
+        <mat-select
+          [(ngModel)]="terrainId"
+          name="terrainId"
+          (selectionChange)="onTerrainChange()"
+          [disabled]="!heureSelected"
+          required
+        >
 
           @if (terrains().length === 0) {
-            <mat-option >Aucun terrain disponible</mat-option>
+            <mat-option disabled>Aucun terrain disponible</mat-option>
           }
 
           @for (terrain of terrains(); track terrain.id) {
@@ -75,11 +120,19 @@
 
       <!-- TYPE -->
       <mat-form-field appearance="outline" class="w-full">
+
         <mat-label>Type de match</mat-label>
 
         <mat-select [(ngModel)]="isPublic" name="public">
-          <mat-option [value]="true">Public</mat-option>
-          <mat-option [value]="false">Privé</mat-option>
+
+          <mat-option [value]="true">
+            Public
+          </mat-option>
+
+          <mat-option [value]="false">
+            Privé
+          </mat-option>
+
         </mat-select>
 
       </mat-form-field>

@@ -7,6 +7,7 @@ import { MatOption, MatSelect } from '@angular/material/select';
 import { MatButton } from '@angular/material/button';
 import { Terrain } from '../../models/terrain';
 import { MatCard } from '@angular/material/card';
+import { Site } from '../../models/site';
 
 @Component({
   selector: 'app-create-match',
@@ -32,6 +33,8 @@ export class CreateMatch implements OnInit {
   terrainId: number | null = null;
   isPublic: boolean = true;
   terrains = signal<Terrain[]>([]);
+  sites = signal<Site[]>([]);
+  siteId: number | null = null;
 
   error = signal<string | null>(null);
 
@@ -42,12 +45,12 @@ export class CreateMatch implements OnInit {
 
   ngOnInit() {
     console.log('INIT OK');
-    this.matchService.getTerrains().subscribe({
+    this.matchService.getSites().subscribe({
       next: (data) => {
-        console.log('terrain:', data);
-        this.terrains.set(data);
+        console.log('sites:', data);
+        this.sites.set(data);
       },
-      error: () => this.error.set('Erreur chargement de terrains'),
+      error: () => this.error.set('Erreur chargement des sites'),
     });
   }
 
@@ -98,12 +101,12 @@ export class CreateMatch implements OnInit {
 
   onTerrainChange() {
     const terrain = this.terrains().find((t) => t.id === this.terrainId);
-    console.log("terrain selectionné :",terrain);
+    console.log('terrain selectionné :', terrain);
 
     if (terrain) {
       this.generateSlots(terrain.heureOuverture, terrain.heureFermeture);
-    }else {
-      console.log("pas de site ou heures")
+    } else {
+      console.log('pas de site ou heures');
     }
   }
 
@@ -119,23 +122,60 @@ export class CreateMatch implements OnInit {
     const dateStr = new Date(this.date).toISOString().split('T')[0];
 
     this.matchService.getCreneauxDisponibles(dateStr).subscribe({
-      next: (data) => this.slots = data,
+      next: (data) => (this.slots = data),
       error: (err) => {
-        console.error("ERREUR BACK:", err);
-        this.error.set(err.error?.message || "Erreur chargement terrains");
-      }
+        console.error('ERREUR BACK:', err);
+        this.error.set(err.error?.message || 'Erreur chargement terrains');
+      },
     });
   }
 
   onSlotChange() {
-    if (!this.date || !this.heureSelected) return;
+      console.log("siteId =", this.siteId);
+      console.log("heure =", this.heureSelected);
 
-    const dateStr = new Date(this.date).toISOString().split('T')[0];
+      if (!this.date || !this.heureSelected || !this.siteId) {
+        return;
+      }
 
-    this.matchService.getTerrainsDisponiblesParCreneau(dateStr, this.heureSelected)
-      .subscribe({
-        next: (data) => this.terrains.set(data),
-        error: () => this.error.set("Erreur chargement terrains")
-      });
+      const dateStr = new Date(this.date)
+        .toISOString()
+        .split('T')[0];
+      this.terrainId = null;
+
+      this.matchService
+        .getTerrainsDisponiblesParCreneau(
+          dateStr,
+          this.heureSelected,
+          this.siteId
+        )
+        .subscribe({
+          next: (data) => {
+            console.log("terrains filtrés :", data);
+            this.terrains.set(data);
+          },
+          error: (err) => {
+            console.error(err);
+            this.error.set('Erreur chargement terrains');
+          },
+        });
   }
+
+  protected onSiteChange() {
+      const site = this.sites().find(s => s.id === this.siteId);
+
+      console.log("site sélectionné :", site);
+
+      if (!site) return;
+
+      // reset
+      this.terrainId = null;
+      this.heureSelected = '';
+      this.slots = [];
+      this.terrains.set([]);
+
+
+      // générer les créneaux selon les horaires du site
+      this.generateSlots(site.heureOuverture, site.heureFermeture);
+    }
 }

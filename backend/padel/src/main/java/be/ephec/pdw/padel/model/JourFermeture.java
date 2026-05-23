@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 @Entity
 @Getter
@@ -18,5 +19,6 @@ public class JourFermeture {
     private LocalDate date;
 
     @ManyToOne
+    @JsonBackReference
     private Site site;
 }
