@@ -50,6 +50,7 @@ public class ReservationService {
             throw new BusinessRuleException("Le membre a un solde du");
         }
 
+        matchService.validerDroitReservation(membre, match.getTerrain(), match.getDateHeureDebut());
 
         Reservation reservation = Reservation.builder()
                 .match(match)
@@ -131,6 +132,8 @@ public class ReservationService {
                                 reservation.getMatch().getDateHeureDebut(),
                                 reservation.getMatch().getReservations().size(),
                                 reservation.getMatch().getTerrain().getNom(),
+                                reservation.getMatch().getTerrain().getSite().getId(),
+                                reservation.getMatch().getTerrain().getSite().getName(),
                                 reservation.getMatch().isEstPublic()
                         ),
                         reservation.isEstPayee()

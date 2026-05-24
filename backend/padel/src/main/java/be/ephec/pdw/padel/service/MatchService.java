@@ -49,7 +49,7 @@ public class MatchService {
         }
 
         terrainService.verifierJourFermeture(terrain.getSite(), dateHeure);
-        validerDelaiReservation(membre, dateHeure);
+        validerDroitReservation(membre, terrain, dateHeure);
 
         Match match = Match.builder()
                 .organisateur(membre)
@@ -92,6 +92,8 @@ public class MatchService {
                                 .filter(Reservation::isEstPayee)
                                 .count(),
                         m.getTerrain().getNom(),
+                        m.getTerrain().getSite().getId(),
+                        m.getTerrain().getSite().getName(),
                         m.isEstPublic()
                 ))
                 .toList();
@@ -149,13 +151,62 @@ public class MatchService {
         }
     }
 
-    private void validerDelaiReservation(Membre membre, LocalDateTime dateMatch){
+    public void validerDroitReservation(Membre membre, Terrain terrain, LocalDateTime dateMatch) {
+        validerCategorieMembre(membre);
+        validerSiteReservation(membre, terrain);
+        validerFenetreReservation(membre, dateMatch);
+    }
 
+    private void validerCategorieMembre(Membre membre) {
+        String matricule = membre.getMatricule();
+
+        if (membre instanceof MembreGlobal && matricule != null && matricule.startsWith("G")) {
+            return;
+        }
+
+        if (membre instanceof MembreSite && matricule != null && matricule.startsWith("S")) {
+            return;
+        }
+
+        if (membre instanceof MembreLibre && matricule != null && matricule.startsWith("L")) {
+            return;
+        }
+
+        throw new BusinessRuleException("Le matricule ne correspond pas a la categorie du membre");
+    }
+
+    private void validerSiteReservation(Membre membre, Terrain terrain) {
+        if (!(membre instanceof MembreSite membreSite)) {
+            return;
+        }
+
+        Site siteMembre = membreSite.getSite();
+        Site siteTerrain = terrain.getSite();
+
+        if (siteMembre == null || siteTerrain == null || !memeSite(siteMembre, siteTerrain)) {
+            throw new BusinessRuleException("Un membre du site ne peut reserver que sur son site");
+        }
+    }
+
+    private boolean memeSite(Site siteMembre, Site siteTerrain) {
+        if (siteMembre.getId() != null && siteTerrain.getId() != null) {
+            return siteMembre.getId().equals(siteTerrain.getId());
+        }
+
+        return siteMembre == siteTerrain;
+    }
+
+    private void validerFenetreReservation(Membre membre, LocalDateTime dateMatch) {
         long joursDelai = membre.getDelaiReservations();
-        LocalDateTime dateMin = LocalDateTime.now().plusDays(joursDelai);
+        LocalDateTime maintenant = LocalDateTime.now();
+        LocalDateTime dateMax = maintenant.plusDays(joursDelai);
 
-        if(dateMatch.isBefore(dateMin)){
-            throw new BusinessRuleException("Ce membre doit réserver au moins " + joursDelai + " jours à l'avance");
+        if (dateMatch.isBefore(maintenant)) {
+            throw new BusinessRuleException("Impossible de reserver un match dans le passe");
+        }
+
+        if (dateMatch.isAfter(dateMax)) {
+            throw new BusinessRuleException("Ce membre ne peut pas reserver plus de " + joursDelai + " jours a l'avance");
         }
     }
 

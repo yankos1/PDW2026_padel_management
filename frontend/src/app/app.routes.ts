@@ -7,6 +7,7 @@ import { MesReservations } from './core/components/mes-reservations/mes-reservat
 import { CreateMatch } from './core/components/create-match/create-match';
 import { Admin } from './core/components/admin/admin';
 import { Home } from './core/components/home/home';
+import { MonCompte } from './core/components/mon-compte/mon-compte';
 
 export const routes: Routes = [
   {
@@ -35,13 +36,21 @@ export const routes: Routes = [
   {
     path: 'mes-reservations',
     component: MesReservations,
+    canActivate: [authGuard]
+  },
+  {
+    path: 'mon-compte',
+    component: MonCompte,
+    canActivate: [authGuard]
   },
   {
     path: 'create-match',
     component: CreateMatch,
+    canActivate: [authGuard]
   },
   {
     path: 'admin',
     component: Admin,
+    canActivate: [authGuard]
   }
 ];

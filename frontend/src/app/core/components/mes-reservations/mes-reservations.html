@@ -6,36 +6,87 @@
     <p class="match-count">Aucune réservation</p>
   }
 
-  @for (r of reservations(); track r.id) {
-    <mat-card class="match-card">
+  @if (reservationsAVenir().length > 0) {
+    <h3 class="section-title">À venir</h3>
 
-      <mat-card-header>
-        <mat-card-title>Match #{{ r.match.id }}</mat-card-title>
-        <mat-card-subtitle>
-          {{ r.match.dateHeureDebut | date:'dd/MM/yyyy HH:mm' }}
-        </mat-card-subtitle>
-      </mat-card-header>
+    @for (r of reservationsAVenir(); track r.id) {
+      <mat-card class="match-card">
 
-      <mat-card-content>
-        <p>Participants : {{ r.match.nbParticipants }}/4</p>
-        <p>
-          Statut :
-          <strong>
-            {{ r.paye ? 'Payé' : 'Non payé' }}
-          </strong>
-        </p>
-      </mat-card-content>
+        <mat-card-header>
+          <mat-card-title>Match #{{ r.match.id }}</mat-card-title>
+          <mat-card-subtitle>
+            {{ r.match.dateHeureDebut | date:'dd/MM/yyyy HH:mm' }}
+          </mat-card-subtitle>
+        </mat-card-header>
 
-      <mat-card-actions>
-        @if (!r.paye) {
-          <button mat-raised-button color="primary"
-                  (click)="payerReservation(r.id)">
-            Payer
-          </button>
-        }
-      </mat-card-actions>
+        <mat-card-content>
+          <p>
+            Site :
+            <strong>{{ r.match.site || 'Non renseigné' }}</strong>
+          </p>
+          <p>
+            Terrain :
+            <strong>{{ r.match.terrain || r.match.terrainNom || 'Non renseigné' }}</strong>
+          </p>
+          <p>Participants : {{ r.match.nbParticipants }}/4</p>
+          <p>
+            Match :
+            <strong>{{ libelleStatut(r) }}</strong>
+          </p>
+          <p>
+            Paiement :
+            <strong>{{ estPayee(r) ? 'Payé' : 'Non payé' }}</strong>
+          </p>
+        </mat-card-content>
 
-    </mat-card>
+        <mat-card-actions>
+          @if (!estPayee(r)) {
+            <button mat-raised-button color="primary"
+                    (click)="payerReservation(r.id)">
+              Payer
+            </button>
+          }
+        </mat-card-actions>
+
+      </mat-card>
+    }
+  }
+
+  @if (reservationsPasseesOuAnnulees().length > 0) {
+    <h3 class="section-title">Passées ou annulées</h3>
+
+    @for (r of reservationsPasseesOuAnnulees(); track r.id) {
+      <mat-card class="match-card reservation-archivee">
+
+        <mat-card-header>
+          <mat-card-title>Match #{{ r.match.id }}</mat-card-title>
+          <mat-card-subtitle>
+            {{ r.match.dateHeureDebut | date:'dd/MM/yyyy HH:mm' }}
+          </mat-card-subtitle>
+        </mat-card-header>
+
+        <mat-card-content>
+          <p>
+            Site :
+            <strong>{{ r.match.site || 'Non renseigné' }}</strong>
+          </p>
+          <p>
+            Terrain :
+            <strong>{{ r.match.terrain || r.match.terrainNom || 'Non renseigné' }}</strong>
+          </p>
+          <p>Participants : {{ r.match.nbParticipants }}/4</p>
+          <p>
+            Match :
+            <strong>{{ libelleStatut(r) }}</strong>
+          </p>
+          <p>
+            Paiement :
+            <strong>{{ estPayee(r) ? 'Payé' : 'Non payé' }}</strong>
+          </p>
+        </mat-card-content>
+
+      </mat-card>
+    }
   }
 
 </div>

@@ -15,6 +15,12 @@ export class Reservation {
 
   rejoindreMatch(match:any) {
     const user = this.authService.getUser();
+
+    if (!user) {
+      alert('Pas de matricule');
+      return;
+    }
+
     const input={
       matricule: user.matricule,
       matchId: match.id

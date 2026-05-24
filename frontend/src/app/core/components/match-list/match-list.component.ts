@@ -51,7 +51,9 @@ export class MatchListComponent implements OnInit {
     this.matchService.getMatchDisponibles().subscribe((matchs) => {
       this.reservationService.getMesReservations(matricule).subscribe((reservations) => {
         const matchReserveId = reservations.map((r: any) => r.match.id);
-        const matchFiltre = matchs.filter((m: any) => !matchReserveId.includes(m.id));
+        const matchFiltre = matchs.filter(
+          (m: any) => !matchReserveId.includes(m.id) && !this.matchDejaPasse(m),
+        );
 
         this.matchs.set(matchFiltre);
       });
@@ -68,6 +70,12 @@ export class MatchListComponent implements OnInit {
       console.error('Pas de matricule !');
       return;
     }
+
+    if (!this.peutReserver(match)) {
+      alert(this.raisonBlocageReservation(match));
+      return;
+    }
+
     this.reservationService
       .rejoindreMatch({
         matricule: matricule,
@@ -77,10 +85,8 @@ export class MatchListComponent implements OnInit {
         next: (res) => {
           console.log('réservation réussir', res);
 
-          this.matchService.getMatchDisponibles().subscribe((data) => {
-            this.matchs.set(data);
-            alert('Tu as rejoint le match ');
-          });
+          this.ngOnInit();
+          alert('Tu as rejoint le match ');
         },
         error: (err) => {
           console.log(err);
@@ -93,6 +99,11 @@ export class MatchListComponent implements OnInit {
     const matricule = this.authService.getMatricule();
     if (!matricule) {
       alert('Pas de matricule');
+      return;
+    }
+
+    if (!this.peutReserver(match)) {
+      alert(this.raisonBlocageReservation(match));
       return;
     }
 
@@ -109,10 +120,48 @@ export class MatchListComponent implements OnInit {
   }
 
   ouvrirPaiement(match: any) {
+    if (!this.peutReserver(match)) {
+      alert(this.raisonBlocageReservation(match));
+      return;
+    }
+
     const confirm = window.confirm('Paiement de 15€ requis. Continuer ?');
 
     if (confirm) {
       this.payerMatchPublic(match);
     }
+  }
+
+  peutReserver(match: any): boolean {
+    return this.raisonBlocageReservation(match) === null;
+  }
+
+  raisonBlocageReservation(match: any): string | null {
+    if (this.matchDejaPasse(match)) {
+      return 'Ce match est déjà passé';
+    }
+
+    if (!this.authService.canReserveDate(match.dateHeureDebut)) {
+      const delai = this.authService.getDelaiReservation();
+      return delai === null
+        ? 'Catégorie de membre invalide'
+        : `Vous pouvez réserver au maximum ${delai} jours avant la date du match`;
+    }
+
+    const siteMembreId = this.authService.getSiteMembreId();
+
+    if (
+      this.authService.getTypeMembre() === 'SITE' &&
+      siteMembreId !== null &&
+      match.siteId !== siteMembreId
+    ) {
+      return 'Un membre du site ne peut réserver que sur son site';
+    }
+
+    return null;
+  }
+
+  private matchDejaPasse(match: any): boolean {
+    return new Date(match.dateHeureDebut).getTime() <= Date.now();
   }
 }

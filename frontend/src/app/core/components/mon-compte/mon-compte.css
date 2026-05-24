@@ -1,0 +1,40 @@
+.account {
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.title {
+  margin: 0 0 20px;
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+.account-card {
+  border-radius: 8px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.label {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.empty {
+  color: #666;
+}

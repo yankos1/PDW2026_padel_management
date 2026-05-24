@@ -14,15 +14,27 @@
 
       <mat-card-content>
         <p>
+          Site :
+          <strong>{{ match.site }}</strong>
+        </p>
+        <p>
+          Terrain :
+          <strong>{{ match.terrain }}</strong>
+        </p>
+        <p>
           Participants :
           <strong>{{ match.nbParticipants }}</strong>
         </p>
+        @if (!peutReserver(match)) {
+          <p class="error">{{ raisonBlocageReservation(match) }}</p>
+        }
       </mat-card-content>
 
       <mat-card-actions align="end">
         <button
           mat-raised-button color="primary"
-          (click)="ouvrirPaiement(match)">
+          (click)="ouvrirPaiement(match)"
+          [disabled]="!peutReserver(match)">
           Rejoindre
         </button>
       </mat-card-actions>

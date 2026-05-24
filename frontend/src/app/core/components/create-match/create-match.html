@@ -16,6 +16,8 @@
           [(ngModel)]="date"
           (change)="onDateChange()"
           name="date"
+          [min]="dateMin"
+          [max]="dateMax"
           required
         >
 
@@ -43,7 +45,7 @@
           }
 
           @for (site of sites(); track site.id) {
-            <mat-option [value]="site.id">
+            <mat-option [value]="site.id" [disabled]="!siteAutorise(site.id)">
               {{ site.name }}
             </mat-option>
           }

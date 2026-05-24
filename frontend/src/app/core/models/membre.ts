@@ -8,6 +8,7 @@ export interface Membre {
   prenom: string;
   email: string;
   typeMembre: TypeMembre;
+  role?: string;
   penaliteActive : boolean;
   finPenalite? : string;
   soldeDu : number;

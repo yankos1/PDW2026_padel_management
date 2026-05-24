@@ -65,4 +65,39 @@ export class MesReservations {
       }
     });
   }
+
+  reservationsAVenir(): any[] {
+    return this.reservations().filter((reservation: any) => !this.reservationPasseeOuAnnulee(reservation));
+  }
+
+  reservationsPasseesOuAnnulees(): any[] {
+    return this.reservations().filter((reservation: any) => this.reservationPasseeOuAnnulee(reservation));
+  }
+
+  reservationPasseeOuAnnulee(reservation: any): boolean {
+    const statutMatch = reservation.match?.statut;
+
+    return (
+      statutMatch === 'TERMINE' ||
+      statutMatch === 'ANNULE' ||
+      reservation.statut === 'ANNULEE' ||
+      new Date(reservation.match?.dateHeureDebut).getTime() <= Date.now()
+    );
+  }
+
+  libelleStatut(reservation: any): string {
+    if (reservation.match?.statut === 'ANNULE' || reservation.statut === 'ANNULEE') {
+      return 'Annulé';
+    }
+
+    if (reservation.match?.statut === 'TERMINE' || this.reservationPasseeOuAnnulee(reservation)) {
+      return 'Terminé';
+    }
+
+    return 'À venir';
+  }
+
+  estPayee(reservation: any): boolean {
+    return reservation.paye === true || reservation.estPayee === true;
+  }
 }

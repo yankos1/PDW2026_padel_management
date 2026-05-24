@@ -29,7 +29,9 @@
       @if (isLoggedIn()) {
         <div class="user">
 
-          <span>{{ user?.name }}</span>
+          <a class="account-link" routerLink="/mon-compte">
+            {{ user?.prenom }} {{ user?.nom }}
+          </a>
 
           <button mat-button class="logout-btn" (click)="logout()">
             Déconnexion

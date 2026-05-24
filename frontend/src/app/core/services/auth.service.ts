@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Membre } from '../models/membre';
+import { TypeMembre } from '../models/membre';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -19,13 +20,116 @@ export class AuthService {
     localStorage.setItem('user', JSON.stringify(user));
   }
 
-  getUser() {
-    return JSON.parse(localStorage.getItem('user') || 'null');
+  getUser(): Membre | null {
+    return JSON.parse(localStorage.getItem('user') || 'null') as Membre | null;
   }
 
   getMatricule(): string | null {
     const user = this.getUser();
-    return user ? user.matricule : null;
+    return user?.matricule?.trim().toUpperCase() ?? null;
+  }
+
+  getTypeMembre(): TypeMembre | null {
+    const user = this.getUser();
+    const typeMembre = user?.typeMembre?.toUpperCase();
+
+    if (typeMembre === 'GLOBAL' || typeMembre === 'SITE' || typeMembre === 'LIBRE') {
+      return typeMembre;
+    }
+
+    const matricule = this.getMatricule();
+
+    if (!matricule) {
+      return null;
+    }
+
+    if (matricule.startsWith('G')) {
+      return 'GLOBAL';
+    }
+
+    if (matricule.startsWith('S')) {
+      return 'SITE';
+    }
+
+    if (matricule.startsWith('L')) {
+      return 'LIBRE';
+    }
+
+    return null;
+  }
+
+  getDelaiReservation(): number | null {
+    const typeMembre = this.getTypeMembre();
+
+    if (typeMembre === 'GLOBAL') {
+      return 21;
+    }
+
+    if (typeMembre === 'SITE') {
+      return 14;
+    }
+
+    if (typeMembre === 'LIBRE') {
+      return 5;
+    }
+
+    return null;
+  }
+
+  getSiteMembreId(): number | null {
+    const user = this.getUser();
+    const siteId = user?.site?.id;
+
+    if (typeof siteId === 'number') {
+      return siteId;
+    }
+
+    if (typeof siteId === 'string') {
+      return Number(siteId);
+    }
+
+    return null;
+  }
+
+  canReserveDate(dateMatch: string | Date): boolean {
+    const delai = this.getDelaiReservation();
+
+    if (delai === null) {
+      return false;
+    }
+
+    const maintenant = new Date();
+    maintenant.setHours(0, 0, 0, 0);
+    const matchDate = typeof dateMatch === 'string' ? new Date(dateMatch) : dateMatch;
+    matchDate.setHours(0, 0, 0, 0);
+    const dateMax = new Date(maintenant);
+    dateMax.setDate(dateMax.getDate() + delai);
+
+    return matchDate >= maintenant && matchDate <= dateMax;
+  }
+
+  getDateMaxReservation(): string | null {
+    const delai = this.getDelaiReservation();
+
+    if (delai === null) {
+      return null;
+    }
+
+    const dateMax = new Date();
+    dateMax.setDate(dateMax.getDate() + delai);
+    return this.formatDateInput(dateMax);
+  }
+
+  getDateMinReservation(): string {
+    return this.formatDateInput(new Date());
+  }
+
+  private formatDateInput(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
   }
 
   logout() {
@@ -35,7 +139,7 @@ export class AuthService {
 
   getRole(): string | null {
     const user = this.getUser();
-    return user ? user.role : null;
+    return user?.role ?? null;
   }
 
   isAdmin():boolean{

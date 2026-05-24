@@ -41,6 +41,8 @@ public class MatchController {
                 match.getDateHeureDebut(),
                 1, // hardcodé car tjrs 1 a la création
                 match.getTerrain().getNom(),
+                match.getTerrain().getSite().getId(),
+                match.getTerrain().getSite().getName(),
                 match.isEstPublic()
         );
     }

@@ -8,6 +8,7 @@ import { MatButton } from '@angular/material/button';
 import { Terrain } from '../../models/terrain';
 import { MatCard } from '@angular/material/card';
 import { Site } from '../../models/site';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-create-match',
@@ -27,7 +28,7 @@ import { Site } from '../../models/site';
   styleUrl: './create-match.css',
 })
 export class CreateMatch implements OnInit {
-  date: Date | null = null;
+  date: string | null = null;
   slots: string[] = [];
   heureSelected: string = '';
   terrainId: number | null = null;
@@ -41,6 +42,7 @@ export class CreateMatch implements OnInit {
   constructor(
     private matchService: MatchService,
     private router: Router,
+    private authService: AuthService,
   ) {}
 
   ngOnInit() {
@@ -60,10 +62,27 @@ export class CreateMatch implements OnInit {
       return;
     }
 
-    //construire datetime et convertir heure europe
+    const matricule = this.authService.getMatricule();
+
+    if (!matricule) {
+      this.error.set('Vous devez être connecté pour créer un match');
+      return;
+    }
+
     const dateTime = `${this.date}T${this.heureSelected}:00`;
+
+    if (!this.authService.canReserveDate(dateTime)) {
+      this.error.set(this.messageDelaiReservation());
+      return;
+    }
+
+    if (!this.siteAutorise(this.siteId)) {
+      this.error.set('Un membre du site ne peut réserver que sur son site');
+      return;
+    }
+
     const dto = {
-      organisateur_matricule: 'G0001', //TODO a changer, juste pour test
+      organisateur_matricule: matricule,
       terrainID: this.terrainId,
       date: dateTime,
       estPublic: this.isPublic,
@@ -119,7 +138,16 @@ export class CreateMatch implements OnInit {
   onDateChange() {
     if (!this.date) return;
 
-    const dateStr = new Date(this.date).toISOString().split('T')[0];
+    const dateMax = this.authService.getDateMaxReservation();
+
+    if (dateMax && (this.date < this.authService.getDateMinReservation() || this.date > dateMax)) {
+      this.error.set(this.messageDelaiReservation());
+      this.resetChoixReservation();
+      return;
+    }
+
+    this.error.set(null);
+    const dateStr = this.date;
 
     this.matchService.getCreneauxDisponibles(dateStr).subscribe({
       next: (data) => (this.slots = data),
@@ -138,9 +166,7 @@ export class CreateMatch implements OnInit {
         return;
       }
 
-      const dateStr = new Date(this.date)
-        .toISOString()
-        .split('T')[0];
+      const dateStr = this.date;
       this.terrainId = null;
 
       this.matchService
@@ -168,6 +194,14 @@ export class CreateMatch implements OnInit {
 
       if (!site) return;
 
+      if (!this.siteAutorise(site.id)) {
+        this.error.set('Un membre du site ne peut réserver que sur son site');
+        this.resetChoixReservation(false);
+        return;
+      }
+
+      this.error.set(null);
+
       // reset
       this.terrainId = null;
       this.heureSelected = '';
@@ -178,4 +212,47 @@ export class CreateMatch implements OnInit {
       // générer les créneaux selon les horaires du site
       this.generateSlots(site.heureOuverture, site.heureFermeture);
     }
+
+  get dateMin(): string {
+    return this.authService.getDateMinReservation();
+  }
+
+  get dateMax(): string | null {
+    return this.authService.getDateMaxReservation();
+  }
+
+  siteAutorise(siteId: number | null): boolean {
+    if (this.authService.getTypeMembre() !== 'SITE') {
+      return true;
+    }
+
+    const siteMembreId = this.authService.getSiteMembreId();
+
+    if (siteMembreId === null) {
+      return true;
+    }
+
+    return siteId !== null && siteId === siteMembreId;
+  }
+
+  messageDelaiReservation(): string {
+    const delai = this.authService.getDelaiReservation();
+
+    if (delai === null) {
+      return 'Catégorie de membre invalide';
+    }
+
+    return `Vous pouvez réserver au maximum ${delai} jours avant la date du match`;
+  }
+
+  private resetChoixReservation(resetSite = true) {
+    if (resetSite) {
+      this.siteId = null;
+    }
+
+    this.terrainId = null;
+    this.heureSelected = '';
+    this.slots = [];
+    this.terrains.set([]);
+  }
 }

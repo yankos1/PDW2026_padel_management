@@ -23,7 +23,6 @@ class MatchServiceTest {
     @Mock private TerrainRepository terrainRepository;
     @Mock private MatchRepository matchRepository;
     @Mock private ReservationRepository reservationRepository;
-    @Mock private JourFermetureRepository jourFermetureRepository;
 
     @InjectMocks
     private MatchService matchService;
@@ -37,6 +36,7 @@ class MatchServiceTest {
         membre.setMatricule("G0002");
 
         Site site = new Site();
+        site.setId(1L);
 
         terrain = new Terrain();
         terrain.setId(1L);
@@ -53,13 +53,11 @@ class MatchServiceTest {
 
         @Test
         void shouldCreateMatchSuccessfully() {
-            LocalDateTime date = LocalDateTime.now().plusDays(30);
+            LocalDateTime date = LocalDateTime.now().plusDays(20);
 
             when(membreRepository.findById("G0002")).thenReturn(Optional.of(membre));
             when(terrainRepository.findById(1L)).thenReturn(Optional.of(terrain));
             when(matchRepository.existsByTerrainAndDateHeureDebut(any(), any())).thenReturn(false);
-            when(jourFermetureRepository.existsByDate(any())).thenReturn(false);
-            when(jourFermetureRepository.existsBySiteAndDate(any(), any())).thenReturn(false);
 
             Match result = matchService.creerMatch("G0002", 1L, date, false);
 
@@ -70,7 +68,7 @@ class MatchServiceTest {
 
         @Test
         void shouldRejectIfTerrainAlreadyReserved() {
-            LocalDateTime date = LocalDateTime.now().plusDays(30);
+            LocalDateTime date = LocalDateTime.now().plusDays(20);
 
             when(membreRepository.findById("G0002")).thenReturn(Optional.of(membre));
             when(terrainRepository.findById(1L)).thenReturn(Optional.of(terrain));
@@ -98,7 +96,7 @@ class MatchServiceTest {
             when(membreRepository.findById("G0002")).thenReturn(Optional.of(membre));
 
             assertThrows(BusinessRuleException.class, () ->
-                    matchService.creerMatch("G0002", 1L, LocalDateTime.now().plusDays(30), false)
+                    matchService.creerMatch("G0002", 1L, LocalDateTime.now().plusDays(20), false)
             );
         }
 
@@ -109,7 +107,7 @@ class MatchServiceTest {
             when(membreRepository.findById("G0002")).thenReturn(Optional.of(membre));
 
             assertThrows(BusinessRuleException.class, () ->
-                    matchService.creerMatch("G0002", 1L, LocalDateTime.now().plusDays(30), false)
+                    matchService.creerMatch("G0002", 1L, LocalDateTime.now().plusDays(20), false)
             );
         }
     }
@@ -124,16 +122,95 @@ class MatchServiceTest {
 
         @Test
         void shouldRejectIfReservationTooEarly() {
-            LocalDateTime date = LocalDateTime.now().plusDays(1); // trop tôt pour global
+            LocalDateTime date = LocalDateTime.now().plusDays(22); // trop tôt pour global
 
             when(membreRepository.findById("G0002")).thenReturn(Optional.of(membre));
             when(terrainRepository.findById(1L)).thenReturn(Optional.of(terrain));
             when(matchRepository.existsByTerrainAndDateHeureDebut(any(), any())).thenReturn(false);
-            when(jourFermetureRepository.existsByDate(any())).thenReturn(false);
-            when(jourFermetureRepository.existsBySiteAndDate(any(), any())).thenReturn(false);
 
             assertThrows(BusinessRuleException.class, () ->
                     matchService.creerMatch("G0002", 1L, date, false)
+            );
+        }
+
+        @Test
+        void shouldAllowGlobalMemberInside21DaysWindow() {
+            LocalDateTime date = LocalDateTime.now().plusDays(10);
+
+            when(membreRepository.findById("G0002")).thenReturn(Optional.of(membre));
+            when(terrainRepository.findById(1L)).thenReturn(Optional.of(terrain));
+            when(matchRepository.existsByTerrainAndDateHeureDebut(any(), any())).thenReturn(false);
+
+            Match result = matchService.creerMatch("G0002", 1L, date, false);
+
+            assertNotNull(result);
+        }
+
+        @Test
+        void shouldRejectLibreMemberOutside5DaysWindow() {
+            MembreLibre membreLibre = new MembreLibre();
+            membreLibre.setMatricule("L00001");
+
+            when(membreRepository.findById("L00001")).thenReturn(Optional.of(membreLibre));
+            when(terrainRepository.findById(1L)).thenReturn(Optional.of(terrain));
+            when(matchRepository.existsByTerrainAndDateHeureDebut(any(), any())).thenReturn(false);
+
+            assertThrows(BusinessRuleException.class, () ->
+                    matchService.creerMatch("L00001", 1L, LocalDateTime.now().plusDays(6), false)
+            );
+        }
+
+        @Test
+        void shouldAllowSiteMemberOnOwnSite() {
+            Site site = new Site();
+            site.setId(1L);
+
+            MembreSite membreSite = new MembreSite();
+            membreSite.setMatricule("S00001");
+            membreSite.setSite(site);
+            terrain.setSite(site);
+
+            when(membreRepository.findById("S00001")).thenReturn(Optional.of(membreSite));
+            when(terrainRepository.findById(1L)).thenReturn(Optional.of(terrain));
+            when(matchRepository.existsByTerrainAndDateHeureDebut(any(), any())).thenReturn(false);
+
+            Match result = matchService.creerMatch("S00001", 1L, LocalDateTime.now().plusDays(13), false);
+
+            assertNotNull(result);
+            verify(matchRepository).save(any());
+        }
+
+        @Test
+        void shouldRejectSiteMemberOnAnotherSite() {
+            Site memberSite = new Site();
+            memberSite.setId(1L);
+            Site terrainSite = new Site();
+            terrainSite.setId(2L);
+
+            MembreSite membreSite = new MembreSite();
+            membreSite.setMatricule("S00001");
+            membreSite.setSite(memberSite);
+            terrain.setSite(terrainSite);
+
+            when(membreRepository.findById("S00001")).thenReturn(Optional.of(membreSite));
+            when(terrainRepository.findById(1L)).thenReturn(Optional.of(terrain));
+            when(matchRepository.existsByTerrainAndDateHeureDebut(any(), any())).thenReturn(false);
+
+            assertThrows(BusinessRuleException.class, () ->
+                    matchService.creerMatch("S00001", 1L, LocalDateTime.now().plusDays(13), false)
+            );
+        }
+
+        @Test
+        void shouldRejectIfMatriculeDoesNotMatchMemberCategory() {
+            membre.setMatricule("S00001");
+
+            when(membreRepository.findById("S00001")).thenReturn(Optional.of(membre));
+            when(terrainRepository.findById(1L)).thenReturn(Optional.of(terrain));
+            when(matchRepository.existsByTerrainAndDateHeureDebut(any(), any())).thenReturn(false);
+
+            assertThrows(BusinessRuleException.class, () ->
+                    matchService.creerMatch("S00001", 1L, LocalDateTime.now().plusDays(20), false)
             );
         }
     }
@@ -176,3 +253,4 @@ class MatchServiceTest {
         }
     }
 }
+

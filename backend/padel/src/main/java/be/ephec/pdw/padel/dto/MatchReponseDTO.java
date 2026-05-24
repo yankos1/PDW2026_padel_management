@@ -7,6 +7,8 @@ public record MatchReponseDTO(
         LocalDateTime dateHeureDebut,
         int nbParticipants,
         String terrain,
+        Long siteId,
+        String site,
         boolean estPublic
 ) {
 }
