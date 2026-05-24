@@ -66,6 +66,13 @@
   display: block;
 }
 
+.success {
+  color: #2e7d32;
+  font-size: 0.8rem;
+  margin-top: 4px;
+  display: block;
+}
+
 .btn-primary {
   width: 100%;
   padding: 10px;
@@ -79,4 +86,47 @@
 
 .btn-primary:hover {
   background: #333;
+}
+
+.create-account-link {
+  display: block;
+  margin: 10px auto 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #555;
+  font-size: 0.78rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.create-account-link:hover {
+  color: #111;
+}
+
+.register-form {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #eee;
+}
+
+.btn-secondary {
+  width: 100%;
+  padding: 9px;
+  background: white;
+  color: #1a1a1a;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: #f6f6f6;
+}
+
+.btn-secondary:disabled,
+.form-field input:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }

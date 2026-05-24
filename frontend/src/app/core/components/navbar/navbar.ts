@@ -3,6 +3,7 @@ import { MatButton } from '@angular/material/button';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { MatSidenav, MatSidenavContainer, MatSidenavContent } from '@angular/material/sidenav';
+import { Membre } from '../../models/membre';
 
 @Component({
   selector: 'app-sidebar',
@@ -20,10 +21,10 @@ import { MatSidenav, MatSidenavContainer, MatSidenavContent } from '@angular/mat
   standalone: true,
 })
 export class Navbar {
-  user: any;
+  constructor(public authService: AuthService) {}
 
-  constructor(public authService: AuthService) {
-    this.user = this.authService.getUser();
+  get user(): Membre | null {
+    return this.authService.getUser();
   }
 
   logout() {
@@ -31,6 +32,6 @@ export class Navbar {
   }
 
   isLoggedIn(): boolean {
-    return !!localStorage.getItem('user');
+    return this.authService.isLoggedIn();
   }
 }

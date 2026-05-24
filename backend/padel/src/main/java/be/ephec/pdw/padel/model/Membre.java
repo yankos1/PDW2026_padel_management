@@ -1,5 +1,6 @@
 package be.ephec.pdw.padel.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -24,6 +25,9 @@ public abstract class Membre {
 
     @Enumerated(EnumType.STRING)
     private Role role;
+
+    @JsonIgnore
+    private String adminPasswordHash;
 
     public boolean aUnePenaliteActive() {
         return penaliteActive && finPenalite != null  && finPenalite.isAfter(LocalDateTime.now());

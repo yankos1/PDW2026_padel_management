@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { LoginComponent } from './core/components/login/login.component';
 import { MatchListComponent } from './core/components/match-list/match-list.component';
 import { authGuard } from './core/guards/auth-guard';
+import { adminGuard } from './core/guards/admin-guard';
 import {Reservation} from './core/components/reservation/reservation';
 import { MesReservations } from './core/components/mes-reservations/mes-reservations';
 import { CreateMatch } from './core/components/create-match/create-match';
@@ -32,6 +33,7 @@ export const routes: Routes = [
   {
     path: 'reservation',
     component: Reservation,
+    canActivate: [authGuard]
   },
   {
     path: 'mes-reservations',
@@ -51,6 +53,6 @@ export const routes: Routes = [
   {
     path: 'admin',
     component: Admin,
-    canActivate: [authGuard]
+    canActivate: [authGuard, adminGuard]
   }
 ];

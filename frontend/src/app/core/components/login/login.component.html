@@ -17,15 +17,85 @@
             placeholder="Matricule"
             name="matricule"
             [(ngModel)]="matricule"
+            (ngModelChange)="onMatriculeChange()"
+            (blur)="checkAdminPasswordStatus()"
             required
           />
         </div>
+
+        @if (adminPasswordRequired) {
+          <div class="form-field">
+            <label>{{ adminPasswordCreation ? 'Creer le mot de passe admin' : 'Mot de passe admin' }}</label>
+            <input
+              matInput
+              type="password"
+              [placeholder]="adminPasswordCreation ? 'Minimum 6 caracteres' : 'Mot de passe admin'"
+              name="password"
+              [(ngModel)]="password"
+              required
+            />
+          </div>
+        }
+
+        @if (error) {
+          <p class="error">{{ error }}</p>
+        }
+
+        @if (success) {
+          <p class="success">{{ success }}</p>
+        }
 
         <button class="btn-primary" type="submit">
           Se connecter
         </button>
 
+        <button class="create-account-link" type="button" (click)="toggleRegisterForm()">
+          Creer un compte
+        </button>
+
       </form>
+
+      @if (showRegisterForm) {
+        <form class="register-form" (ngSubmit)="register()">
+          <div class="form-field">
+            <label>Prenom</label>
+            <input
+              matInput
+              name="registerPrenom"
+              [(ngModel)]="registerForm.prenom"
+              [disabled]="registerLoading"
+              required
+            />
+          </div>
+
+          <div class="form-field">
+            <label>Nom</label>
+            <input
+              matInput
+              name="registerNom"
+              [(ngModel)]="registerForm.nom"
+              [disabled]="registerLoading"
+              required
+            />
+          </div>
+
+          <div class="form-field">
+            <label>Email</label>
+            <input
+              matInput
+              type="email"
+              name="registerEmail"
+              [(ngModel)]="registerForm.email"
+              [disabled]="registerLoading"
+              required
+            />
+          </div>
+
+          <button class="btn-secondary" type="submit" [disabled]="registerLoading">
+            {{ registerLoading ? 'Creation en cours...' : 'Valider la creation' }}
+          </button>
+        </form>
+      }
     </mat-card-content>
 
   </mat-card>

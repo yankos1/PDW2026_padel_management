@@ -1,5 +1,6 @@
-import {HttpClient} from '@angular/common/http';
-import {Injectable} from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -7,30 +8,41 @@ import {Injectable} from '@angular/core';
 export class AdminService {
   private api = '/api/admin';
 
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService,
+  ) {}
 
-  constructor(private http: HttpClient) {}
-
-  getMatchs(matricule: string){
-    return this.http.get<number>(`${this.api}/matchs?matricule=${matricule}`);
+  getMatchs() {
+    return this.http.get<number>(`${this.api}/matchs`, this.adminOptions());
   }
 
-  getCA(matricule: string){
-    return this.http.get<number>(`${this.api}/ca?matricule=${matricule}`);
+  getCA() {
+    return this.http.get<number>(`${this.api}/ca`, this.adminOptions());
   }
 
-  getMembres(matricule: string){
-    return this.http.get<number>(`${this.api}/membres?matricule=${matricule}`);
+  getMembres() {
+    return this.http.get<number>(`${this.api}/membres`, this.adminOptions());
   }
 
-  getTerrains(matricule: string){
-    return this.http.get<number>(`${this.api}/terrains?matricule=${matricule}`);
+  getTerrains() {
+    return this.http.get<number>(`${this.api}/terrains`, this.adminOptions());
   }
 
-  getTauxRemplissage(matricule: string){
-    return this.http.get<number>(`${this.api}/taux-remplissage?matricule=${matricule}`);
+  getTauxRemplissage() {
+    return this.http.get<number>(`${this.api}/taux-remplissage`, this.adminOptions());
   }
 
-  getRevenusParSite(matricule: string){
-    return this.http.get<any>(`${this.api}/revenus-par-site?matricule=${matricule}`);
+  getRevenusParSite() {
+    return this.http.get<Record<string, number>>(`${this.api}/revenus-par-site`, this.adminOptions());
+  }
+
+  private adminOptions() {
+    const matricule = this.authService.getMatricule() ?? '';
+    return {
+      headers: new HttpHeaders({
+        'X-User-Matricule': matricule,
+      }),
+    };
   }
 }

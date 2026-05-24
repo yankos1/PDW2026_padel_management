@@ -7,6 +7,7 @@ import java.util.Optional;
 
 public interface MembreRepository extends JpaRepository<Membre,String> {
 
+    Optional<Membre> findTopByMatriculeStartingWithOrderByMatriculeDesc(String prefix);
 
     // Optional<Membre> findByMatricule(String organisateur_matricule);
 }

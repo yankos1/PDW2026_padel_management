@@ -3,6 +3,11 @@ import { Injectable } from '@angular/core';
 import { Membre } from '../models/membre';
 import { TypeMembre } from '../models/membre';
 
+export interface AdminPasswordStatus {
+  admin: boolean;
+  passwordCreation: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private api = '/api/auth';
@@ -10,10 +15,25 @@ export class AuthService {
 
   constructor(private http: HttpClient) {}
 
-  login(matricule: string) {
+  login(matricule: string, password?: string) {
     return this.http.post<Membre>(`${this.api}/login`, {
       matricule: matricule,
+      password: password,
     });
+  }
+
+  getAdminPasswordStatus(matricule: string) {
+    return this.http.get<AdminPasswordStatus>(
+      `${this.api}/admin-password-status/${encodeURIComponent(matricule)}`,
+    );
+  }
+
+  register(input: {
+    nom: string;
+    prenom: string;
+    email: string;
+  }) {
+    return this.http.post<Membre>(`${this.api}/register`, input);
   }
 
   setUser(user: Membre) {
@@ -152,10 +172,6 @@ export class AuthService {
   }
 
   isLoggedIn(): boolean {
-return !!localStorage.getItem('token');
+    return !!localStorage.getItem('user');
+  }
 }
-}
-//TO DO later
-// isLoggedIn(): boolean {
-//   return !!localStorage.getItem('token');
-// }

@@ -1,7 +1,8 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { DecimalPipe, KeyValuePipe } from '@angular/common';
+import { catchError, combineLatest, of } from 'rxjs';
 import { AdminService } from '../../services/admin.service';
 import { AuthService } from '../../services/auth.service';
-import { DecimalPipe, KeyValuePipe } from '@angular/common';
 
 import {
   MatCard,
@@ -10,7 +11,6 @@ import {
   MatCardSubtitle,
   MatCardTitle,
 } from '@angular/material/card';
-import { catchError, combineLatest, of } from 'rxjs';
 
 @Component({
   selector: 'app-admin',
@@ -32,7 +32,7 @@ export class Admin implements OnInit {
   membres = 0;
   terrains = 0;
   taux = 0;
-  revenus: any = {};
+  revenus: Record<string, number> = {};
 
   loading = true;
   error = '';
@@ -45,26 +45,24 @@ export class Admin implements OnInit {
 
   ngOnInit() {
     if (!this.authService.isAdmin()) {
-      this.error = 'Accès refusé';
+      this.error = 'Acces refuse';
       this.loading = false;
       return;
     }
 
-    const matricule = this.authService.getMatricule();
-
-    if (!matricule) {
-      this.error = 'Utilisateur non connecté';
+    if (!this.authService.getMatricule()) {
+      this.error = 'Utilisateur non connecte';
       this.loading = false;
       return;
     }
 
     combineLatest([
-      this.adminService.getMatchs(matricule).pipe(catchError(() => of(0))),
-      this.adminService.getCA(matricule).pipe(catchError(() => of(0))),
-      this.adminService.getMembres(matricule).pipe(catchError(() => of(0))),
-      this.adminService.getTerrains(matricule).pipe(catchError(() => of(0))),
-      this.adminService.getTauxRemplissage(matricule).pipe(catchError(() => of(0))),
-      this.adminService.getRevenusParSite(matricule).pipe(catchError(() => of({}))),
+      this.adminService.getMatchs().pipe(catchError(() => of(0))),
+      this.adminService.getCA().pipe(catchError(() => of(0))),
+      this.adminService.getMembres().pipe(catchError(() => of(0))),
+      this.adminService.getTerrains().pipe(catchError(() => of(0))),
+      this.adminService.getTauxRemplissage().pipe(catchError(() => of(0))),
+      this.adminService.getRevenusParSite().pipe(catchError(() => of({}))),
     ]).subscribe({
       next: ([matchs, ca, membres, terrains, taux, revenus]) => {
         this.matchs = matchs;

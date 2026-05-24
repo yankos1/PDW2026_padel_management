@@ -17,4 +17,12 @@ public class GlobalExceptionHandler {
 
         return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<String> handleForbiddenException(ForbiddenException e) {
+
+        log.warn("Forbidden access: {}", e.getMessage());
+
+        return new ResponseEntity<>(e.getMessage(), HttpStatus.FORBIDDEN);
+    }
 }
