@@ -1,10 +1,37 @@
 @import 'tailwindcss'; /* You can add global styles to this file, and also import other style files */
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
+
+.mat-mdc-card,
+.mat-mdc-card-content,
+.mat-mdc-card-header {
+  min-width: 0;
+}
+
 .match-container {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 20px;
+  width: 100%;
+  padding: 16px;
   max-width: 700px;
   margin: 0 auto;
 }
@@ -12,6 +39,8 @@
 .match-card {
   border-radius: 12px;
   padding: 8px;
+  width: 100%;
+  overflow-wrap: anywhere;
 }
 
 mat-card-header {
@@ -39,7 +68,14 @@ mat-card-content p {
 
 mat-card-actions {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   justify-content: flex-end;
+}
+
+mat-card-actions button,
+mat-card-actions a {
+  max-width: 100%;
 }
 
 .match-count {
@@ -50,7 +86,7 @@ mat-card-actions {
 .title {
   text-align: center;
   margin-top: 20px;
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: bold;
 }
 .match-card {
@@ -61,4 +97,32 @@ mat-card-actions {
 .match-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}
+
+@media (max-width: 768px) {
+  .match-container {
+    padding: 12px 0;
+  }
+
+  .match-card {
+    padding: 4px;
+  }
+
+  mat-card-title {
+    font-size: 1rem;
+  }
+
+  mat-card-actions {
+    justify-content: stretch;
+  }
+
+  mat-card-actions button,
+  mat-card-actions a {
+    width: 100%;
+  }
+
+  .title {
+    font-size: 1.25rem;
+    margin: 8px 0 12px;
+  }
 }

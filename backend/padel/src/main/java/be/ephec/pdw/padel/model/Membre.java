@@ -32,5 +32,10 @@ public abstract class Membre {
     public boolean aUnePenaliteActive() {
         return penaliteActive && finPenalite != null  && finPenalite.isAfter(LocalDateTime.now());
     }
+
+    public boolean isPenaliteActive() {
+        return aUnePenaliteActive();
+    }
+
     public abstract long getDelaiReservations();
 }

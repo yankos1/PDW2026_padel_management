@@ -65,13 +65,23 @@ export class MonCompte {
     return this.authService.getMatricule() || 'Non renseigne';
   }
 
+  penaliteActive(): boolean {
+    if (!this.user?.penaliteActive || !this.user.finPenalite) {
+      return false;
+    }
+
+    return new Date(this.user.finPenalite).getTime() > Date.now();
+  }
+
   libellePenalite(): string {
-    if (!this.user?.penaliteActive) {
+    if (!this.penaliteActive()) {
       return 'Aucune';
     }
 
-    return this.user.finPenalite
-      ? `Active jusqu'au ${this.formatDateHeure(this.user.finPenalite)}`
+    const finPenalite = this.user?.finPenalite;
+
+    return finPenalite
+      ? `Active jusqu'au ${this.formatDateHeure(finPenalite)}`
       : 'Active';
   }
 

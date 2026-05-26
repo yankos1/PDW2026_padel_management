@@ -34,8 +34,8 @@
             <strong>{{ user.email || 'Non renseigne' }}</strong>
           </div>
 
-          <div class="info-item" [class.warning]="user.penaliteActive">
-            <span class="label">Penalite</span>
+          <div class="info-item" [class.warning]="penaliteActive()">
+            <span class="label">Penalité</span>
             <strong>{{ libellePenalite() }}</strong>
           </div>
 
@@ -47,6 +47,6 @@
       </mat-card-content>
     </mat-card>
   } @else {
-    <p class="empty">Aucun compte connecte.</p>
+    <p class="empty">Aucun compte connecté.</p>
   }
 </section>

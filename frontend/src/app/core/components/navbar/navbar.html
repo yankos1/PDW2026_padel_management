@@ -1,6 +1,6 @@
 <mat-sidenav-container class="layout">
 
-  <mat-sidenav mode="side" opened class="sidenav">
+  <mat-sidenav #drawer [mode]="isMobile ? 'over' : 'side'" [opened]="!isMobile" class="sidenav">
 
     <div class="logo">
       PADEL
@@ -9,12 +9,12 @@
     <div class="menu">
 
       @if (isLoggedIn()) {
-        <button mat-button routerLink="/home" routerLinkActive="router-link-active">Accueil</button>
-        <button mat-button routerLink="/match" routerLinkActive="router-link-active">Matchs</button>
-        <button mat-button routerLink="/mes-reservations" routerLinkActive="router-link-active">Mes reservations</button>
-        <button mat-button routerLink="/create-match" routerLinkActive="router-link-active">Creer un match</button>
+        <button mat-button routerLink="/home" routerLinkActive="router-link-active" (click)="closeMenu(drawer)">Accueil</button>
+        <button mat-button routerLink="/match" routerLinkActive="router-link-active" (click)="closeMenu(drawer)">Matchs</button>
+        <button mat-button routerLink="/mes-reservations" routerLinkActive="router-link-active" (click)="closeMenu(drawer)">Mes reservations</button>
+        <button mat-button routerLink="/create-match" routerLinkActive="router-link-active" (click)="closeMenu(drawer)">Creer un match</button>
         @if (authService.isAdmin()) {
-          <button mat-button routerLink="/admin" routerLinkActive="router-link-active">Admin</button>
+          <button mat-button routerLink="/admin" routerLinkActive="router-link-active" (click)="closeMenu(drawer)">Admin</button>
         }
       }
 
@@ -25,6 +25,12 @@
   <mat-sidenav-content class="main">
 
     <div class="topbar">
+
+      @if (isLoggedIn()) {
+        <button mat-button class="mobile-menu-btn" type="button" (click)="drawer.toggle()">
+          Menu
+        </button>
+      }
 
       <div class="spacer"></div>
 

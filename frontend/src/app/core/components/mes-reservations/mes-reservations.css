@@ -54,6 +54,7 @@
 
 .private-player-form {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   align-items: flex-start;
   margin-top: 14px;
