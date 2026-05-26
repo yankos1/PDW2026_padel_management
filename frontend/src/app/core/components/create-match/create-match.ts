@@ -65,7 +65,7 @@ export class CreateMatch implements OnInit {
     const matricule = this.authService.getMatricule();
 
     if (!matricule) {
-      this.error.set('Vous devez être connecté pour créer un match');
+      this.error.set('Vous devez etre connecte pour creer un match');
       return;
     }
 
@@ -77,7 +77,7 @@ export class CreateMatch implements OnInit {
     }
 
     if (!this.siteAutorise(this.siteId)) {
-      this.error.set('Un membre du site ne peut réserver que sur son site');
+      this.error.set('Un membre du site ne peut reserver que sur son site');
       return;
     }
 
@@ -93,9 +93,10 @@ export class CreateMatch implements OnInit {
     this.matchService.createMatch(dto).subscribe({
       next: () => this.router.navigate(['/mes-reservations']),
       error: (err) =>
-        this.error.set(err.error?.message || err.error || 'Erreur lors de la création'),
+        this.error.set(err.error?.message || err.error || 'Erreur lors de la creation'),
     });
   }
+
   generateSlots(open: string, close: string) {
     this.slots = [];
 
@@ -118,9 +119,31 @@ export class CreateMatch implements OnInit {
     return date.toTimeString().slice(0, 5);
   }
 
+  estDansLes24h(dateTime: string): boolean {
+    const dateMatch = new Date(dateTime);
+    const maintenant = new Date();
+    const dans24h = new Date(maintenant.getTime() + 24 * 60 * 60 * 1000);
+
+    return dateMatch <= dans24h;
+  }
+
+  matchPriveDesactive(): boolean {
+    if (!this.date || !this.heureSelected) {
+      return false;
+    }
+
+    return this.estDansLes24h(`${this.date}T${this.heureSelected}:00`);
+  }
+
+  appliquerDisponibiliteTypeMatch() {
+    if (this.matchPriveDesactive()) {
+      this.isPublic = true;
+    }
+  }
+
   onTerrainChange() {
     const terrain = this.terrains().find((t) => t.id === this.terrainId);
-    console.log('terrain selectionné :', terrain);
+    console.log('terrain selectionne :', terrain);
 
     if (terrain) {
       this.generateSlots(terrain.heureOuverture, terrain.heureFermeture);
@@ -147,9 +170,9 @@ export class CreateMatch implements OnInit {
     }
 
     this.error.set(null);
-    const dateStr = this.date;
+    this.appliquerDisponibiliteTypeMatch();
 
-    this.matchService.getCreneauxDisponibles(dateStr).subscribe({
+    this.matchService.getCreneauxDisponibles(this.date).subscribe({
       next: (data) => (this.slots = data),
       error: (err) => {
         console.error('ERREUR BACK:', err);
@@ -159,46 +182,43 @@ export class CreateMatch implements OnInit {
   }
 
   onSlotChange() {
-      console.log("siteId =", this.siteId);
-      console.log("heure =", this.heureSelected);
+    console.log('siteId =', this.siteId);
+    console.log('heure =', this.heureSelected);
 
-      if (!this.date || !this.heureSelected || !this.siteId) {
-        return;
-      }
+    this.appliquerDisponibiliteTypeMatch();
 
-      const dateStr = this.date;
-      this.terrainId = null;
+    if (!this.date || !this.heureSelected || !this.siteId) {
+      return;
+    }
 
-      this.matchService
-        .getTerrainsDisponiblesParCreneau(
-          dateStr,
-          this.heureSelected,
-          this.siteId
-        )
-        .subscribe({
-          next: (data) => {
-            console.log("terrains filtrés :", data);
-            this.terrains.set(data);
-          },
-          error: (err) => {
-            console.error(err);
-            this.error.set('Erreur chargement terrains');
-          },
-        });
+    this.terrainId = null;
+
+    this.matchService
+      .getTerrainsDisponiblesParCreneau(this.date, this.heureSelected, this.siteId)
+      .subscribe({
+        next: (data) => {
+          console.log('terrains filtres :', data);
+          this.terrains.set(data);
+        },
+        error: (err) => {
+          console.error(err);
+          this.error.set('Erreur chargement terrains');
+        },
+      });
   }
 
   protected onSiteChange() {
-      const site = this.sites().find(s => s.id === this.siteId);
+    const site = this.sites().find((s) => s.id === this.siteId);
 
-      console.log("site sélectionné :", site);
+    console.log('site selectionne :', site);
 
-      if (!site) return;
+    if (!site) return;
 
-      if (!this.siteAutorise(site.id)) {
-        this.error.set('Un membre du site ne peut réserver que sur son site');
-        this.resetChoixReservation(false);
-        return;
-      }
+    if (!this.siteAutorise(site.id)) {
+      this.error.set('Un membre du site ne peut reserver que sur son site');
+      this.resetChoixReservation(false);
+      return;
+    }
 
       this.error.set(null);
 
@@ -239,10 +259,10 @@ export class CreateMatch implements OnInit {
     const delai = this.authService.getDelaiReservation();
 
     if (delai === null) {
-      return 'Catégorie de membre invalide';
+      return 'Categorie de membre invalide';
     }
 
-    return `Vous pouvez réserver au maximum ${delai} jours avant la date du match`;
+    return `Vous pouvez reserver au maximum ${delai} jours avant la date du match`;
   }
 
   private resetChoixReservation(resetSite = true) {
@@ -254,5 +274,6 @@ export class CreateMatch implements OnInit {
     this.heureSelected = '';
     this.slots = [];
     this.terrains.set([]);
+    this.appliquerDisponibiliteTypeMatch();
   }
 }

@@ -11,6 +11,9 @@ import {
 } from '@angular/material/card';
 import { DatePipe } from '@angular/common';
 import { MatButton } from '@angular/material/button';
+import { FormsModule } from '@angular/forms';
+import { MatInput } from '@angular/material/input';
+import { MatFormField, MatLabel } from '@angular/material/form-field';
 
 @Component({
   selector: 'app-mes-reservations',
@@ -23,12 +26,18 @@ import { MatButton } from '@angular/material/button';
     MatCardHeader,
     MatCardSubtitle,
     MatButton,
+    FormsModule,
+    MatFormField,
+    MatInput,
+    MatLabel,
   ],
   templateUrl: './mes-reservations.html',
   styleUrl: './mes-reservations.css',
 })
 export class MesReservations {
   reservations = signal<any>([]);
+  joueurMatricules: Record<number, string> = {};
+  erreursAjout: Record<number, string> = {};
 
   constructor(
     private reservationService: ReservationService,
@@ -66,6 +75,32 @@ export class MesReservations {
     });
   }
 
+  ajouterJoueurMatchPrive(reservation: any) {
+    const organisateurMatricule = this.authService.getMatricule();
+    const joueurMatricule = this.joueurMatricules[reservation.match.id]?.trim().toUpperCase();
+
+    if (!organisateurMatricule || !joueurMatricule) {
+      this.erreursAjout[reservation.match.id] = 'Matricule obligatoire';
+      return;
+    }
+
+    this.reservationService.ajouterJoueurMatchPrive({
+      organisateurMatricule,
+      joueurMatricule,
+      matchId: reservation.match.id,
+    }).subscribe({
+      next: () => {
+        this.joueurMatricules[reservation.match.id] = '';
+        this.erreursAjout[reservation.match.id] = '';
+        this.ngOnInit();
+      },
+      error: (err) => {
+        this.erreursAjout[reservation.match.id] =
+          err.error?.message || err.error || 'Erreur lors de l ajout du joueur';
+      },
+    });
+  }
+
   reservationsAVenir(): any[] {
     return this.reservations().filter((reservation: any) => !this.reservationPasseeOuAnnulee(reservation));
   }
@@ -99,5 +134,26 @@ export class MesReservations {
 
   estPayee(reservation: any): boolean {
     return reservation.paye === true || reservation.estPayee === true;
+  }
+
+  libelleTypeMatch(reservation: any): string {
+    return reservation.match?.estPublic ? 'Match public' : 'Match privé';
+  }
+
+  estResponsable(reservation: any): boolean {
+    return this.authService.getMatricule() === reservation.match?.organisateurMatricule;
+  }
+
+  placesRestantes(reservation: any): number {
+    return Math.max(0, 4 - (reservation.match?.nbParticipants ?? 0));
+  }
+
+  peutAjouterJoueurPrive(reservation: any): boolean {
+    return (
+      this.estResponsable(reservation) &&
+      reservation.match?.estPublic === false &&
+      reservation.match?.nbParticipants < 4 &&
+      !this.reservationPasseeOuAnnulee(reservation)
+    );
   }
 }

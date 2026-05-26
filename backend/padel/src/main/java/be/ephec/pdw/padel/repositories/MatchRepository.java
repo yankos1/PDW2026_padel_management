@@ -15,6 +15,8 @@ public interface MatchRepository extends JpaRepository<Match,Long> {
 
     List<Match> findByDateHeureDebut(LocalDateTime dateHeureDebut);
 
+    List<Match> findByStatut(StatutMatch statut);
+
     List<Match> findByStatutAndEstPublic(StatutMatch statut, boolean estPublic);
 
     boolean existsByTerrainAndDateHeureDebut(Terrain terrain, LocalDateTime dateHeureDebut);

@@ -22,7 +22,7 @@ export class MonCompte {
     const prenom = this.user?.prenom?.trim();
     const nom = this.user?.nom?.trim();
 
-    return [prenom, nom].filter(Boolean).join(' ') || 'Non renseigné';
+    return [prenom, nom].filter(Boolean).join(' ') || 'Non renseigne';
   }
 
   typeMembre(): TypeMembre | null {
@@ -30,6 +30,10 @@ export class MonCompte {
   }
 
   libelleTypeMembre(): string {
+    if (this.authService.isAdmin()) {
+      return 'Admin';
+    }
+
     const type = this.typeMembre();
 
     if (type === 'GLOBAL') {
@@ -37,14 +41,14 @@ export class MonCompte {
     }
 
     if (type === 'SITE') {
-      return 'Membre du site';
+      return this.user?.site?.name ? `Membre du site ${this.user.site.name}` : 'Membre du site';
     }
 
     if (type === 'LIBRE') {
       return 'Membre libre';
     }
 
-    return 'Non renseigné';
+    return 'Non renseigne';
   }
 
   delaiReservation(): string {
@@ -58,6 +62,32 @@ export class MonCompte {
   }
 
   matricule(): string {
-    return this.authService.getMatricule() || 'Non renseigné';
+    return this.authService.getMatricule() || 'Non renseigne';
+  }
+
+  libellePenalite(): string {
+    if (!this.user?.penaliteActive) {
+      return 'Aucune';
+    }
+
+    return this.user.finPenalite
+      ? `Active jusqu'au ${this.formatDateHeure(this.user.finPenalite)}`
+      : 'Active';
+  }
+
+  private formatDateHeure(value: string): string {
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+
+    return new Intl.DateTimeFormat('fr-BE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date);
   }
 }

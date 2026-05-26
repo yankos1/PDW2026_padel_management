@@ -1,5 +1,9 @@
 <h2 class="title">Matchs publics disponibles</h2>
 
+@if (error()) {
+  <p class="error">{{ error() }}</p>
+}
+
 <div class="match-container">
   @for (match of matchs(); track match.id) {
 
@@ -22,8 +26,8 @@
           <strong>{{ match.terrain }}</strong>
         </p>
         <p>
-          Participants :
-          <strong>{{ match.nbParticipants }}</strong>
+          Places occupees :
+          <strong>{{ match.nbParticipants }}/4</strong>
         </p>
         @if (!peutReserver(match)) {
           <p class="error">{{ raisonBlocageReservation(match) }}</p>
@@ -35,7 +39,7 @@
           mat-raised-button color="primary"
           (click)="ouvrirPaiement(match)"
           [disabled]="!peutReserver(match)">
-          Rejoindre
+          Payer et rejoindre
         </button>
       </mat-card-actions>
 

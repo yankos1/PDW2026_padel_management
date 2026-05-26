@@ -43,6 +43,7 @@ public class MatchController {
                 match.getTerrain().getNom(),
                 match.getTerrain().getSite().getId(),
                 match.getTerrain().getSite().getName(),
+                match.getOrganisateur().getMatricule(),
                 match.isEstPublic()
         );
     }

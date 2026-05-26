@@ -20,6 +20,9 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class MatchService {
+    private static final int NOMBRE_JOUEURS_REQUIS = 4;
+    private static final int DUREE_PENALITE_JOURS = 7;
+
     private final MembreRepository membreRepository;
     private final TerrainRepository terrainRepository;
     private final MatchRepository matchRepository;
@@ -73,30 +76,54 @@ public class MatchService {
         return match;
     }
 
+    @Transactional
     public List<MatchReponseDTO> matchsDisponibles(){
 
-        List<Match> matchs = matchRepository.findByStatutAndEstPublic(StatutMatch.PLANIFIE, true);
+        LocalDateTime maintenant = LocalDateTime.now();
+        List<Match> matchs = matchRepository.findAll()
+                .stream()
+                .filter(m -> m.getDateHeureDebut() != null)
+                .filter(m -> m.getDateHeureDebut().isAfter(maintenant))
+                .toList();
 
         log.info("Nombre de matchs trouvés: {}", matchs.size());
 
         return matchs.stream()
-                .filter(m ->  m.getReservations()
-                        .stream()
-                        .filter(Reservation::isEstPayee)
-                        .count() < 4)
-                .map(m -> new MatchReponseDTO(
-                        m.getId(),
-                        m.getDateHeureDebut(),
-                        (int) m.getReservations()
-                                .stream()
-                                .filter(Reservation::isEstPayee)
-                                .count(),
-                        m.getTerrain().getNom(),
-                        m.getTerrain().getSite().getId(),
-                        m.getTerrain().getSite().getName(),
-                        m.isEstPublic()
-                ))
+                .filter(this::matchAffichable)
+                .filter(m -> m.getStatut() != StatutMatch.ANNULE)
+                .filter(m -> estVisibleCommeMatchPublic(m, maintenant))
+                .filter(m -> nombreParticipantsVisibles(m) < NOMBRE_JOUEURS_REQUIS)
+                .map(m -> toMatchReponseDTO(m, estVisibleCommeMatchPublic(m, maintenant)))
                 .toList();
+    }
+
+    private boolean matchAffichable(Match match) {
+        return match.getTerrain() != null
+                && match.getTerrain().getSite() != null
+                && match.getOrganisateur() != null;
+    }
+
+    private boolean estVisibleCommeMatchPublic(Match match, LocalDateTime maintenant) {
+        if (match.isEstPublic()) {
+            return true;
+        }
+
+        LocalDateTime veille = match.getDateHeureDebut().minusDays(1);
+        return !maintenant.isBefore(veille)
+                && nombreReservationsPayees(match) < NOMBRE_JOUEURS_REQUIS;
+    }
+
+    private MatchReponseDTO toMatchReponseDTO(Match match, boolean estPublic) {
+        return new MatchReponseDTO(
+                match.getId(),
+                match.getDateHeureDebut(),
+                nombreParticipantsVisibles(match),
+                match.getTerrain().getNom(),
+                match.getTerrain().getSite().getId(),
+                match.getTerrain().getSite().getName(),
+                match.getOrganisateur().getMatricule(),
+                estPublic
+        );
     }
 
     public List<JoueurDTO> joueursInscritMatch(Long Matchid){
@@ -116,37 +143,51 @@ public class MatchService {
 
     @Transactional
     public void mettreAJourEtatMatch(Match match){
-        long nbJoeursInscrits = reservationRepository.countByMatch(match);
+        long nbJoueursPayes = reservationRepository.countByMatchAndEstPayeeTrue(match);
+        long nbJoueursNonPayes = reservationRepository.countByMatchAndEstPayeeFalse(match);
         LocalDateTime veille = match.getDateHeureDebut().minusDays(1);
+        LocalDateTime maintenant = LocalDateTime.now();
 
-        if (LocalDateTime.now().isAfter(veille)) {
 
-            // si - de 4 joueurs et privé
-            if(!match.isEstPublic() && nbJoeursInscrits < 4){
-                match.setEstPublic(true);
+         //verification la veille
+        if (!maintenant.isBefore(veille)) {
+            //Supprime les réservations non payées et recalcul du nb joueurs payés
+            if (nbJoueursNonPayes > 0) {
+                reservationRepository.deleteByMatchAndEstPayeeFalse(match);
+                nbJoueursPayes = reservationRepository.countByMatchAndEstPayeeTrue(match);
             }
 
-            // enlever les joeurs non payé
+            //si était complet avant verification redevient planifié
+            if (nbJoueursPayes < NOMBRE_JOUEURS_REQUIS && match.getStatut() == StatutMatch.COMPLET) {
+                match.setStatut(StatutMatch.PLANIFIE);
+                matchRepository.save(match);
+            }
+
+            //devient public si privé et incomplet
+            if(!match.isEstPublic() && nbJoueursPayes < NOMBRE_JOUEURS_REQUIS){
+                match.setEstPublic(true);
+                match.setStatut(StatutMatch.PLANIFIE);
+                matchRepository.save(match);
+            }
+        }
+
+        //vérification début du match
+        if (!maintenant.isBefore(match.getDateHeureDebut())) {
+            //suppresion final des non payés
             reservationRepository.deleteByMatchAndEstPayeeFalse(match);
+            nbJoueursPayes = reservationRepository.countByMatchAndEstPayeeTrue(match);
 
-            nbJoeursInscrits = reservationRepository.countByMatch(match); //recalcul du nb joeurs
-
-            // pénalité organisateur pour match non complet
-            if (nbJoeursInscrits < 4){
+            //pénalité organisateur et ajout du solde du
+            if (nbJoueursPayes < NOMBRE_JOUEURS_REQUIS){
                 Membre organisateur = match.getOrganisateur();
                 organisateur.setPenaliteActive(true);
-                organisateur.setFinPenalite(LocalDateTime.now().plusDays(7));
-                membreRepository.save(organisateur);
-            }
+                organisateur.setFinPenalite(maintenant.plusDays(DUREE_PENALITE_JOURS));
 
-            // gestion du soldeDu
-            double total = 60;
-            double dejaPaye = nbJoeursInscrits * 15;
-            double reste = total-dejaPaye;
-
-            if (reste>0){
-                Membre organisateur = match.getOrganisateur();
+                double total = 60;
+                double dejaPaye = nbJoueursPayes * 15;
+                double reste = total - dejaPaye;
                 organisateur.setSoldeDu(reste);
+                membreRepository.save(organisateur);
             }
         }
     }
@@ -196,13 +237,48 @@ public class MatchService {
         return siteMembre == siteTerrain;
     }
 
+    public int nombreParticipantsVisibles(Match match) {
+        long nbParticipants = match.isEstPublic()
+                ? nombrePlacesOccupeesMatchPublic(match)
+                : reservationsDuMatch(match).size();
+
+        return (int) nbParticipants;
+    }
+
+    private long nombrePlacesOccupeesMatchPublic(Match match) {
+        long nbPlacesOccupees = nombreReservationsPayees(match);
+
+        boolean organisateurNonPaye = reservationsDuMatch(match)
+                .stream()
+                .anyMatch(r -> !r.isEstPayee()
+                        && r.getMembre() != null
+                        && r.getMembre().getMatricule().equals(match.getOrganisateur().getMatricule()));
+
+        if (organisateurNonPaye) {
+            nbPlacesOccupees++;
+        }
+
+        return nbPlacesOccupees;
+    }
+
+    private long nombreReservationsPayees(Match match) {
+        return reservationsDuMatch(match)
+                .stream()
+                .filter(Reservation::isEstPayee)
+                .count();
+    }
+
+    private List<Reservation> reservationsDuMatch(Match match) {
+        return match.getReservations() == null ? List.of() : match.getReservations();
+    }
+
     private void validerFenetreReservation(Membre membre, LocalDateTime dateMatch) {
         long joursDelai = membre.getDelaiReservations();
         LocalDateTime maintenant = LocalDateTime.now();
         LocalDateTime dateMax = maintenant.plusDays(joursDelai);
 
         if (dateMatch.isBefore(maintenant)) {
-            throw new BusinessRuleException("Impossible de reserver un match dans le passe");
+            throw new BusinessRuleException("Impossible de reserver un match dans le passé");
         }
 
         if (dateMatch.isAfter(dateMax)) {

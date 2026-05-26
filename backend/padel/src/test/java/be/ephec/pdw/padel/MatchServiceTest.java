@@ -2,11 +2,19 @@ package be.ephec.pdw.padel;
 
 import be.ephec.pdw.padel.configuration.BusinessRuleException;
 import be.ephec.pdw.padel.model.*;
-import be.ephec.pdw.padel.repositories.*;
+import be.ephec.pdw.padel.repositories.MatchRepository;
+import be.ephec.pdw.padel.repositories.MembreRepository;
+import be.ephec.pdw.padel.repositories.ReservationRepository;
+import be.ephec.pdw.padel.repositories.TerrainRepository;
 import be.ephec.pdw.padel.service.MatchService;
-import org.junit.jupiter.api.*;
+import be.ephec.pdw.padel.service.TerrainService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
@@ -230,7 +238,7 @@ class MatchServiceTest {
             match.setDateHeureDebut(LocalDateTime.now().plusHours(10));
             match.setOrganisateur(membre);
 
-            when(reservationRepository.countByMatch(match)).thenReturn(2L);
+            when(reservationRepository.countByMatchAndEstPayeeTrue(match)).thenReturn(2L);
 
             matchService.mettreAJourEtatMatch(match);
 
@@ -238,17 +246,33 @@ class MatchServiceTest {
         }
 
         @Test
-        void shouldApplyPenaltyIfNotEnoughPlayers() {
+        void shouldNotApplyPenaltyBeforeMatchStarts() {
             Match match = new Match();
             match.setEstPublic(false);
             match.setDateHeureDebut(LocalDateTime.now().plusHours(10));
             match.setOrganisateur(membre);
 
-            when(reservationRepository.countByMatch(match)).thenReturn(2L);
+            when(reservationRepository.countByMatchAndEstPayeeTrue(match)).thenReturn(2L);
+
+            matchService.mettreAJourEtatMatch(match);
+
+            assertFalse(membre.isPenaliteActive());
+            verify(membreRepository, never()).save(membre);
+        }
+
+        @Test
+        void shouldApplyPenaltyIfMatchStartedWithoutEnoughPlayers() {
+            Match match = new Match();
+            match.setEstPublic(true);
+            match.setDateHeureDebut(LocalDateTime.now().minusMinutes(1));
+            match.setOrganisateur(membre);
+
+            when(reservationRepository.countByMatchAndEstPayeeTrue(match)).thenReturn(2L);
 
             matchService.mettreAJourEtatMatch(match);
 
             assertTrue(membre.isPenaliteActive());
+            assertNotNull(membre.getFinPenalite());
             verify(membreRepository).save(membre);
         }
     }

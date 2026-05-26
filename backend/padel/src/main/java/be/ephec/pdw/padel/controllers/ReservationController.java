@@ -22,6 +22,15 @@ public class ReservationController {
         return reservationService.rejoindreMatch(input.getMatricule(), input.getMatchId());
     }
 
+    @PostMapping("/match-prive/ajouter-joueur")
+    public Reservation ajouterJoueurMatchPrive(@RequestBody ReservationDTO.AjoutJoueurPriveInput input) {
+        return reservationService.ajouterJoueurMatchPrive(
+                input.getOrganisateurMatricule(),
+                input.getJoueurMatricule(),
+                input.getMatchId()
+        );
+    }
+
     @PutMapping("/{id}/payer")
     public Reservation payerReservation(@PathVariable Long id){
         return reservationService.payerReservation(id);

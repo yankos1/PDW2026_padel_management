@@ -9,6 +9,7 @@ public record MatchReponseDTO(
         String terrain,
         Long siteId,
         String site,
+        String organisateurMatricule,
         boolean estPublic
 ) {
 }

@@ -7,3 +7,69 @@
 .reservation-archivee {
   opacity: 0.72;
 }
+
+.reservation-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 14px;
+}
+
+.badge {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  color: #334155;
+  display: inline-flex;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 7px 9px;
+}
+
+.badge.private {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #9a3412;
+}
+
+.badge.organizer {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  color: #3730a3;
+}
+
+.private-player-panel {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin: 14px 0;
+  padding: 14px;
+}
+
+.private-player-panel p,
+.private-note {
+  color: #475569;
+  margin: 6px 0 0;
+}
+
+.private-player-form {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-top: 14px;
+}
+
+.private-player-form mat-form-field {
+  flex: 1;
+}
+
+@media (max-width: 640px) {
+  .private-player-form {
+    flex-direction: column;
+  }
+
+  .private-player-form mat-form-field,
+  .private-player-form button {
+    width: 100%;
+  }
+}

@@ -20,7 +20,7 @@
           </div>
 
           <div class="info-item">
-            <span class="label">Délai de réservation</span>
+            <span class="label">Delai de reservation</span>
             <strong>{{ delaiReservation() }}</strong>
           </div>
 
@@ -31,22 +31,22 @@
 
           <div class="info-item">
             <span class="label">Email</span>
-            <strong>{{ user.email || 'Non renseigné' }}</strong>
+            <strong>{{ user.email || 'Non renseigne' }}</strong>
+          </div>
+
+          <div class="info-item" [class.warning]="user.penaliteActive">
+            <span class="label">Penalite</span>
+            <strong>{{ libellePenalite() }}</strong>
           </div>
 
           <div class="info-item">
-            <span class="label">Pénalité</span>
-            <strong>{{ user.penaliteActive ? 'Active' : 'Aucune' }}</strong>
-          </div>
-
-          <div class="info-item">
-            <span class="label">Solde dû</span>
-            <strong>{{ user.soldeDu || 0 }} €</strong>
+            <span class="label">Solde du</span>
+            <strong>{{ user.soldeDu || 0 }} EUR</strong>
           </div>
         </div>
       </mat-card-content>
     </mat-card>
   } @else {
-    <p class="empty">Aucun compte connecté.</p>
+    <p class="empty">Aucun compte connecte.</p>
   }
 </section>

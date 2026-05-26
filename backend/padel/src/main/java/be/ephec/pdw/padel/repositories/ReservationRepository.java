@@ -10,7 +10,13 @@ import java.util.List;
 public interface ReservationRepository extends JpaRepository<Reservation,Long> {
     long countByMatch(Match match);
 
+    long countByMatchAndEstPayeeTrue(Match match);
+
+    long countByMatchAndEstPayeeFalse(Match match);
+
     boolean existsByMatchAndMembre(Match match, Membre membre);
+
+    boolean existsByMatchAndMembreAndEstPayeeFalse(Match match, Membre membre);
 
     long countByEstPayeeTrue();
 

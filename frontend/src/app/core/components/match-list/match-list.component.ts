@@ -33,6 +33,7 @@ import { AuthService } from '../../services/auth.service';
 })
 export class MatchListComponent implements OnInit {
   matchs = signal<any[]>([]);
+  error = signal<string | null>(null);
 
   constructor(
     private matchService: MatchService,
@@ -48,26 +49,33 @@ export class MatchListComponent implements OnInit {
       return;
     }
 
-    this.matchService.getMatchDisponibles().subscribe((matchs) => {
-      this.reservationService.getMesReservations(matricule).subscribe((reservations) => {
-        const matchReserveId = reservations.map((r: any) => r.match.id);
-        const matchFiltre = matchs.filter(
-          (m: any) => !matchReserveId.includes(m.id) && !this.matchDejaPasse(m),
-        );
+    this.error.set(null);
+    this.matchService.getMatchDisponibles().subscribe({
+      next: (matchs) => {
+        this.reservationService.getMesReservations(matricule).subscribe({
+          next: (reservations) => {
+            const matchReserveId = reservations.map((r: any) => r.match.id);
+            const matchFiltre = matchs.filter(
+              (m: any) => !matchReserveId.includes(m.id) && !this.matchDejaPasse(m),
+            );
 
-        this.matchs.set(matchFiltre);
-      });
+            this.matchs.set(matchFiltre);
+          },
+          error: () => this.error.set('Impossible de charger vos reservations.'),
+        });
+      },
+      error: () => {
+        this.matchs.set([]);
+        this.error.set('Impossible de charger les matchs publics disponibles.');
+      },
     });
   }
 
   rejoindreMatch(match: any) {
     const matricule = this.authService.getMatricule();
 
-    console.log('Match sélectionné:', match);
-    console.log(matricule);
-
     if (!matricule) {
-      console.error('Pas de matricule !');
+      console.error('Pas de matricule');
       return;
     }
 
@@ -82,19 +90,16 @@ export class MatchListComponent implements OnInit {
         matchId: match.id,
       })
       .subscribe({
-        next: (res) => {
-          console.log('réservation réussir', res);
-
+        next: () => {
           this.ngOnInit();
-          alert('Tu as rejoint le match ');
+          alert('Reservation en attente de paiement');
         },
         error: (err) => {
-          console.log(err);
-          const message = err.error;
-          alert(message);
+          alert(err.error?.message || err.error || 'Reservation impossible');
         },
       });
   }
+
   payerMatchPublic(match: any) {
     const matricule = this.authService.getMatricule();
     if (!matricule) {
@@ -109,12 +114,18 @@ export class MatchListComponent implements OnInit {
 
     this.reservationService.rejoindreMatch({ matricule: matricule, matchId: match.id }).subscribe({
       next: (reservation: any) => {
-        this.reservationService.payerReservation(reservation.id).subscribe();
-        console.log('Paiement réussi');
-        this.ngOnInit();
+        this.reservationService.payerReservation(reservation.id).subscribe({
+          next: () => {
+            this.ngOnInit();
+          },
+          error: (err) => {
+            alert(err.error?.message || err.error || 'Paiement impossible');
+            this.ngOnInit();
+          },
+        });
       },
       error: (err) => {
-        alert(err.error);
+        alert(err.error?.message || err.error || 'Reservation impossible');
       },
     });
   }
@@ -125,7 +136,7 @@ export class MatchListComponent implements OnInit {
       return;
     }
 
-    const confirm = window.confirm('Paiement de 15€ requis. Continuer ?');
+    const confirm = window.confirm('Paiement de 15 euros requis pour confirmer la place. Continuer ?');
 
     if (confirm) {
       this.payerMatchPublic(match);
@@ -138,14 +149,14 @@ export class MatchListComponent implements OnInit {
 
   raisonBlocageReservation(match: any): string | null {
     if (this.matchDejaPasse(match)) {
-      return 'Ce match est déjà passé';
+      return 'Ce match est deja passe';
     }
 
     if (!this.authService.canReserveDate(match.dateHeureDebut)) {
       const delai = this.authService.getDelaiReservation();
       return delai === null
-        ? 'Catégorie de membre invalide'
-        : `Vous pouvez réserver au maximum ${delai} jours avant la date du match`;
+        ? 'Categorie de membre invalide'
+        : `Vous pouvez reserver au maximum ${delai} jours avant la date du match`;
     }
 
     const siteMembreId = this.authService.getSiteMembreId();
@@ -155,7 +166,7 @@ export class MatchListComponent implements OnInit {
       siteMembreId !== null &&
       match.siteId !== siteMembreId
     ) {
-      return 'Un membre du site ne peut réserver que sur son site';
+      return 'Un membre du site ne peut reserver que sur son site';
     }
 
     return null;

@@ -14,6 +14,14 @@ export class ReservationService {
     return this.http.post(`${this.api}/rejoindre`, input);
   }
 
+  ajouterJoueurMatchPrive(input: {
+    organisateurMatricule: string;
+    joueurMatricule: string;
+    matchId: number;
+  }) {
+    return this.http.post(`${this.api}/match-prive/ajouter-joueur`, input);
+  }
+
   getMesReservations(matricule: string) {
     return this.http.get<any[]>(`${this.api}/membre/${matricule}`);
   }

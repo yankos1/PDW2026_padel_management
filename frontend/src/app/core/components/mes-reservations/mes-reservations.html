@@ -1,13 +1,13 @@
-<h2 class="title">Mes réservations</h2>
+<h2 class="title">Mes reservations</h2>
 
 <div class="match-container">
 
   @if (reservations().length === 0) {
-    <p class="match-count">Aucune réservation</p>
+    <p class="match-count">Aucune reservation</p>
   }
 
   @if (reservationsAVenir().length > 0) {
-    <h3 class="section-title">À venir</h3>
+    <h3 class="section-title">A venir</h3>
 
     @for (r of reservationsAVenir(); track r.id) {
       <mat-card class="match-card">
@@ -20,15 +20,57 @@
         </mat-card-header>
 
         <mat-card-content>
+          <div class="reservation-badges">
+            <span class="badge" [class.private]="!r.match.estPublic">
+              {{ libelleTypeMatch(r) }}
+            </span>
+            @if (estResponsable(r)) {
+              <span class="badge organizer">Vous etes l'organisateur</span>
+            }
+          </div>
+
           <p>
             Site :
-            <strong>{{ r.match.site || 'Non renseigné' }}</strong>
+            <strong>{{ r.match.site || 'Non renseigne' }}</strong>
           </p>
           <p>
             Terrain :
-            <strong>{{ r.match.terrain || r.match.terrainNom || 'Non renseigné' }}</strong>
+            <strong>{{ r.match.terrain || r.match.terrainNom || 'Non renseigne' }}</strong>
           </p>
           <p>Participants : {{ r.match.nbParticipants }}/4</p>
+
+          @if (peutAjouterJoueurPrive(r)) {
+            <div class="private-player-panel">
+              <div>
+                <strong>Ajouter les joueurs du match</strong>
+                <p>
+                  Match privé : vous devez ajouter vous-meme les autres joueurs.
+                  {{ placesRestantes(r) }} place(s) restante(s).
+                </p>
+              </div>
+
+              <form class="private-player-form" (ngSubmit)="ajouterJoueurMatchPrive(r)">
+                <mat-form-field appearance="outline">
+                  <mat-label>Matricule du joueur</mat-label>
+                  <input
+                    matInput
+                    name="joueurMatricule-{{ r.match.id }}"
+                    [(ngModel)]="joueurMatricules[r.match.id]"
+                    placeholder="Ex. G0002"
+                    required
+                  >
+                </mat-form-field>
+                <button mat-raised-button color="primary" type="submit">
+                  Ajouter au match
+                </button>
+              </form>
+
+              @if (erreursAjout[r.match.id]) {
+                <p class="error">{{ erreursAjout[r.match.id] }}</p>
+              }
+            </div>
+          }
+
           <p>
             Match :
             <strong>{{ libelleStatut(r) }}</strong>
@@ -66,6 +108,15 @@
         </mat-card-header>
 
         <mat-card-content>
+          <div class="reservation-badges">
+            <span class="badge" [class.private]="!r.match.estPublic">
+              {{ libelleTypeMatch(r) }}
+            </span>
+            @if (estResponsable(r)) {
+              <span class="badge organizer">Vous etes l'organisateur</span>
+            }
+          </div>
+
           <p>
             Site :
             <strong>{{ r.match.site || 'Non renseigné' }}</strong>

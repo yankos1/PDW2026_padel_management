@@ -8,4 +8,11 @@ public class ReservationDTO {
         String matricule;
         Long matchId;
     }
+
+    @Data
+    public static class AjoutJoueurPriveInput {
+        String organisateurMatricule;
+        String joueurMatricule;
+        Long matchId;
+    }
 }

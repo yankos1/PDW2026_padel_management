@@ -30,6 +30,11 @@
   background: #fafafa;
 }
 
+.info-item.warning {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
 .label {
   color: #666;
   font-size: 0.85rem;
