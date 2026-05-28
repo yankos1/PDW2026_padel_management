@@ -100,6 +100,7 @@ public class AdminService {
         return revenus;
     }
 
+    //verification simplifié des droits admin via le matricule envoyé dans le header HTTP
     private Membre getAdmin(String matricule) {
         Membre membre = membreRepository.findById(matricule)
                 .orElseThrow(() -> new ForbiddenException("Utilisateur inconnu"));

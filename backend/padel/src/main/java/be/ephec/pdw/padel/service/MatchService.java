@@ -141,8 +141,25 @@ public class MatchService {
                 .toList();
     }
 
+
+    /**
+     * methode générale
+     * met a jour l'état d'un match normalement
+     * @param match le match à mettre à jour
+     */
     @Transactional
     public void mettreAJourEtatMatch(Match match){
+        mettreAJourEtatMatch(match, null);
+    }
+
+    /**
+     * cas spécial
+     * met à jour l'état d'un match en permettant d'ignorer temporairement une réservation pendant le traitement d'un paiement
+     * @param match le match à mettre à jour
+     * @param reservationEnCoursPaiementId id de la réservation actuellement en cours de paiement (null si aucun cas particulier)
+     */
+    @Transactional
+    public void mettreAJourEtatMatch(Match match, Long reservationEnCoursPaiementId){
         long nbJoueursPayes = reservationRepository.countByMatchAndEstPayeeTrue(match);
         long nbJoueursNonPayes = reservationRepository.countByMatchAndEstPayeeFalse(match);
         LocalDateTime veille = match.getDateHeureDebut().minusDays(1);
@@ -153,7 +170,7 @@ public class MatchService {
         if (!maintenant.isBefore(veille)) {
             //Supprime les réservations non payées et recalcul du nb joueurs payés
             if (nbJoueursNonPayes > 0) {
-                reservationRepository.deleteByMatchAndEstPayeeFalse(match);
+                supprimerReservationsNonPayees(match, reservationEnCoursPaiementId);
                 nbJoueursPayes = reservationRepository.countByMatchAndEstPayeeTrue(match);
             }
 
@@ -174,7 +191,7 @@ public class MatchService {
         //vérification début du match
         if (!maintenant.isBefore(match.getDateHeureDebut())) {
             //suppresion final des non payés
-            reservationRepository.deleteByMatchAndEstPayeeFalse(match);
+            supprimerReservationsNonPayees(match, reservationEnCoursPaiementId);
             nbJoueursPayes = reservationRepository.countByMatchAndEstPayeeTrue(match);
 
             //pénalité organisateur et ajout du solde du
@@ -190,6 +207,15 @@ public class MatchService {
                 membreRepository.save(organisateur);
             }
         }
+    }
+
+    private void supprimerReservationsNonPayees(Match match, Long reservationEnCoursPaiementId) {
+        if (reservationEnCoursPaiementId == null) {
+            reservationRepository.deleteByMatchAndEstPayeeFalse(match);
+            return;
+        }
+
+        reservationRepository.deleteByMatchAndEstPayeeFalseAndIdNot(match, reservationEnCoursPaiementId);
     }
 
     public void validerDroitReservation(Membre membre, Terrain terrain, LocalDateTime dateMatch) {

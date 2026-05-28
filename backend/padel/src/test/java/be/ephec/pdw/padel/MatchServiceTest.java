@@ -31,6 +31,7 @@ class MatchServiceTest {
     @Mock private TerrainRepository terrainRepository;
     @Mock private MatchRepository matchRepository;
     @Mock private ReservationRepository reservationRepository;
+    @Mock private TerrainService terrainService;
 
     @InjectMocks
     private MatchService matchService;

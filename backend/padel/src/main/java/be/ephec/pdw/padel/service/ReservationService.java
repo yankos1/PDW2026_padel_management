@@ -28,8 +28,8 @@ public class ReservationService {
 
     @Transactional
     public Reservation rejoindreMatch(String matricule, Long matchId) {
-        Match match = matchRepository.findById(matchId).orElseThrow();
-        Membre membre = membreRepository.findById(matricule).orElseThrow();
+        Match match = matchRepository.findById(matchId).orElseThrow(() -> new BusinessRuleException("Match introuvable"));
+        Membre membre = membreRepository.findById(matricule).orElseThrow(() -> new BusinessRuleException("Membre introuvable"));
 
         matchService.mettreAJourEtatMatch(match);
 
@@ -124,7 +124,7 @@ public class ReservationService {
             throw new BusinessRuleException("reservation déja payée");
 
         Match match = reservation.getMatch();
-        matchService.mettreAJourEtatMatch(match);
+        matchService.mettreAJourEtatMatch(match, reservation.getId());
 
         if (match.getStatut() == StatutMatch.ANNULE) {
             throw new BusinessRuleException("Impossible de payer un match annulé");

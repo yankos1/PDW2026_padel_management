@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Slf4j
 public class GlobalExceptionHandler {
 
+    //TODO amélioration : erreur actuellement retourné sous forme de texte : retourner un objet { code, message, timestamp }
     @ExceptionHandler(BusinessRuleException.class)
     public ResponseEntity<String> handleBusinessRuleException(BusinessRuleException e) {
 

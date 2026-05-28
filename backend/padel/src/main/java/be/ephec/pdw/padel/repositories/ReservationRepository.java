@@ -25,4 +25,6 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
     List<Reservation> findByMembre(Membre membre);
 
     void deleteByMatchAndEstPayeeFalse(Match match);
+
+    void deleteByMatchAndEstPayeeFalseAndIdNot(Match match, Long reservationId);
 }
