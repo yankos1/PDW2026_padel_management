@@ -32,6 +32,7 @@ import { AuthService } from '../../services/auth.service';
   styleUrls: ['./match-list.component.css'],
 })
 export class MatchListComponent implements OnInit {
+  // TODO [IMPORTANT] Remplacer any par des interfaces TypeScript alignees sur les DTO backend.
   matchs = signal<any[]>([]);
   error = signal<string | null>(null);
 

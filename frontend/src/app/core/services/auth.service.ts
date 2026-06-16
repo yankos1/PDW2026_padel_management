@@ -37,6 +37,7 @@ export class AuthService {
   }
 
   setUser(user: Membre) {
+    // TODO [IMPORTANT] Remplacer localStorage par une gestion de token JWT validee par le backend.
     localStorage.setItem('user', JSON.stringify(user));
   }
 

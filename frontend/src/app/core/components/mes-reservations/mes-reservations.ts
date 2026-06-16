@@ -35,6 +35,7 @@ import { MatFormField, MatLabel } from '@angular/material/form-field';
   styleUrl: './mes-reservations.css',
 })
 export class MesReservations {
+  // TODO [BONUS] Ajouter recherche, filtres et tri sur les reservations affichees.
   reservations = signal<any>([]);
   joueurMatricules: Record<number, string> = {};
   erreursAjout: Record<number, string> = {};

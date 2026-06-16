@@ -114,6 +114,7 @@ public class MatchController {
      *********/
 
     @GetMapping("/sites")
+    // TODO [IMPORTANT] Retourner un SiteDTO pour ne pas exposer directement l'entite JPA.
     public List<Site> getSites() {
         return siteRepository.findAll();
     }

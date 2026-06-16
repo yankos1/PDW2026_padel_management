@@ -12,6 +12,7 @@ public class GlobalExceptionHandler {
 
     //TODO amélioration : erreur actuellement retourné sous forme de texte : retourner un objet { code, message, timestamp }
     @ExceptionHandler(BusinessRuleException.class)
+    // TODO [IMPORTANT] Retourner une erreur JSON structuree avec code, message et timestamp.
     public ResponseEntity<String> handleBusinessRuleException(BusinessRuleException e) {
 
         log.warn("Business rule violated: {}", e.getMessage());

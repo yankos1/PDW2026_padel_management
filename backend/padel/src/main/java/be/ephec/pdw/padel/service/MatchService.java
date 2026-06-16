@@ -47,6 +47,7 @@ public class MatchService {
         Terrain terrain = terrainRepository.findById(idTerrain)
                 .orElseThrow(() -> new BusinessRuleException("Terrain introuvable"));
 
+        // TODO [IMPORTANT] Ajouter une contrainte DB terrain/date pour eviter les doubles reservations concurrentes.
         if (matchRepository.existsByTerrainAndDateHeureDebut(terrain, dateHeure)) {
             throw new BusinessRuleException("Terrain déjà réservé à cette heure");
         }

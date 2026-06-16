@@ -25,6 +25,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("MatchService")
+// TODO [IMPORTANT] Ajouter des tests unitaires et d'integration pour les scenarios metier critiques.
 class MatchServiceTest {
 
     @Mock private MembreRepository membreRepository;

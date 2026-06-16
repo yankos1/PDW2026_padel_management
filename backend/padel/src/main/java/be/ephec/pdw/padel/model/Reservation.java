@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Entity
+// TODO [IMPORTANT] Ajouter une contrainte unique sur le couple match/membre.
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter

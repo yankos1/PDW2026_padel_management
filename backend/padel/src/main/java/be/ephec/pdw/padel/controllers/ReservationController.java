@@ -18,6 +18,7 @@ public class ReservationController {
 
 
     @PostMapping("/rejoindre")
+    // TODO [IMPORTANT] Recuperer le membre connecte depuis le JWT, pas depuis le body.
     public Reservation rejoindre(@RequestBody ReservationDTO.PostInput input) {
         return reservationService.rejoindreMatch(input.getMatricule(), input.getMatchId());
     }
@@ -37,6 +38,7 @@ public class ReservationController {
     }
 
     @GetMapping("/membre/{matricule}")
+    // TODO [IMPORTANT] Verifier que le membre demande correspond a l'utilisateur connecte ou a un admin.
     public List<ReservationReponseDTO> getReservationsByMembre(@PathVariable String matricule) {
         return reservationService.getReservationsByMembre(matricule);
     }

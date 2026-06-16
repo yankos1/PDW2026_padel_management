@@ -27,6 +27,7 @@ public class TerrainService {
     public void verifierJourFermeture(Site site, LocalDateTime dateMatch){
         LocalDate date = dateMatch.toLocalDate();
 
+        // TODO [IMPORTANT] Distinguer fermeture globale et fermeture par site dans le modele.
         if(jourFermetureRepository.existsByDate(date)){
             throw new BusinessRuleException("Les sites sont fermé ce jour");
         }
@@ -44,6 +45,7 @@ public class TerrainService {
         }
 
         // récupérer tous les terrains
+        // TODO [IMPORTANT] Filtrer aussi par site pour eviter des disponibilites incoherentes.
         List<Terrain> terrains = terrainRepository.findAll();
 
         // filtrer ceux qui ont au moins un créneau libre
