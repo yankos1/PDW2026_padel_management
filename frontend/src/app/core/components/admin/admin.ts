@@ -1,8 +1,9 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
-import { DecimalPipe, KeyValuePipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { catchError, combineLatest, of } from 'rxjs';
 import { AdminService } from '../../services/admin.service';
 import { AuthService } from '../../services/auth.service';
+import { Site } from '../../models/site';
 
 import {
   MatCard,
@@ -21,7 +22,6 @@ import {
     MatCardTitle,
     MatCardSubtitle,
     MatCardContent,
-    KeyValuePipe,
   ],
   templateUrl: './admin.html',
   styleUrl: './admin.css',
@@ -33,6 +33,7 @@ export class Admin implements OnInit {
   terrains = 0;
   taux = 0;
   revenus: Record<string, number> = {};
+  sites: Site[] = [];
 
   loading = true;
   error = '';
@@ -63,14 +64,16 @@ export class Admin implements OnInit {
       this.adminService.getTerrains().pipe(catchError(() => of(0))),
       this.adminService.getTauxRemplissage().pipe(catchError(() => of(0))),
       this.adminService.getRevenusParSite().pipe(catchError(() => of({}))),
+      this.adminService.getSites().pipe(catchError(() => of([]))),
     ]).subscribe({
-      next: ([matchs, ca, membres, terrains, taux, revenus]) => {
+      next: ([matchs, ca, membres, terrains, taux, revenus, sites]) => {
         this.matchs = matchs;
         this.ca = ca;
         this.membres = membres;
         this.terrains = terrains;
         this.taux = taux;
         this.revenus = revenus;
+        this.sites = sites;
         this.loading = false;
         this.cdr.detectChanges();
       },

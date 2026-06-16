@@ -11,6 +11,7 @@ import be.ephec.pdw.padel.model.StatutMatch;
 import be.ephec.pdw.padel.repositories.MatchRepository;
 import be.ephec.pdw.padel.repositories.MembreRepository;
 import be.ephec.pdw.padel.repositories.ReservationRepository;
+import be.ephec.pdw.padel.repositories.SiteRepository;
 import be.ephec.pdw.padel.repositories.TerrainRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ public class AdminService {
     private final ReservationRepository reservationRepository;
     private final MembreRepository membreRepository;
     private final TerrainRepository terrainRepository;
+    private final SiteRepository siteRepository;
 
     // TODO [IMPORTANT] Optimiser les statistiques admin avec des requetes repository agregees.
     public long nombreMatchs(String matricule) {
@@ -99,6 +101,20 @@ public class AdminService {
             }
         }
         return revenus;
+    }
+
+    public List<Site> sites(String matricule) {
+        Membre admin = getAdmin(matricule);
+
+        if (admin.getRole() == Role.ADMIN_GLOBAL) {
+            return siteRepository.findAll();
+        }
+
+        if (admin instanceof MembreSite adminSite && adminSite.getSite() != null) {
+            return List.of(adminSite.getSite());
+        }
+
+        return List.of();
     }
 
     //verification simplifié des droits admin via le matricule envoyé dans le header HTTP

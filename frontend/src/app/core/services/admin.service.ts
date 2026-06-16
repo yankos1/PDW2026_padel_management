@@ -1,6 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { AuthService } from './auth.service';
+import { Site } from '../models/site';
 
 @Injectable({
   providedIn: 'root'
@@ -35,6 +36,10 @@ export class AdminService {
 
   getRevenusParSite() {
     return this.http.get<Record<string, number>>(`${this.api}/revenus-par-site`, this.adminOptions());
+  }
+
+  getSites() {
+    return this.http.get<Site[]>(`${this.api}/sites`, this.adminOptions());
   }
 
   private adminOptions() {

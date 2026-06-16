@@ -26,18 +26,18 @@
       </mat-card-content>
     </mat-card>
 
-    @for (site of revenus | keyvalue; track site.key) {
+    @for (site of sites; track site.id) {
       <mat-card class="match-card">
 
         <mat-card-header>
-          <mat-card-title>{{ site.key }}</mat-card-title>
+          <mat-card-title>{{ site.name }}</mat-card-title>
           <mat-card-subtitle>Revenus du site</mat-card-subtitle>
         </mat-card-header>
 
         <mat-card-content>
           <p>
             Montant :
-            <strong>{{ site.value }} €</strong>
+            <strong>{{ revenus[site.name] || 0 }} €</strong>
           </p>
         </mat-card-content>
 
