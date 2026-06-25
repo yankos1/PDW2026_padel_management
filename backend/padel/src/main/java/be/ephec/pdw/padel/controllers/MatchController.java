@@ -3,9 +3,9 @@ package be.ephec.pdw.padel.controllers;
 import be.ephec.pdw.padel.dto.JoueurDTO;
 import be.ephec.pdw.padel.dto.MatchDTO;
 import be.ephec.pdw.padel.dto.MatchReponseDTO;
+import be.ephec.pdw.padel.dto.SiteDTO;
 import be.ephec.pdw.padel.dto.TerrainDTO;
 import be.ephec.pdw.padel.model.Match;
-import be.ephec.pdw.padel.model.Site;
 import be.ephec.pdw.padel.repositories.SiteRepository;
 import be.ephec.pdw.padel.repositories.TerrainRepository;
 import be.ephec.pdw.padel.service.MatchService;
@@ -45,7 +45,8 @@ public class MatchController {
                 match.getTerrain().getSite().getId(),
                 match.getTerrain().getSite().getName(),
                 match.getOrganisateur().getMatricule(),
-                match.isEstPublic()
+                match.isEstPublic(),
+                match.getStatut()
         );
     }
 
@@ -115,9 +116,11 @@ public class MatchController {
      *********/
 
     @GetMapping("/sites")
-    // TODO [IMPORTANT][ARCHITECTURE] Retourner un SiteDTO pour ne pas exposer directement l'entite JPA.
-    public List<Site> getSites() {
-        return siteRepository.findAll();
+    public List<SiteDTO> getSites() {
+        return siteRepository.findAll()
+                .stream()
+                .map(SiteDTO::from)
+                .toList();
     }
 
 }

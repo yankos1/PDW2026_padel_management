@@ -1,6 +1,7 @@
 package be.ephec.pdw.padel.service;
 
 import be.ephec.pdw.padel.configuration.BusinessRuleException;
+import be.ephec.pdw.padel.configuration.BusinessConstants;
 import be.ephec.pdw.padel.dto.JoueurDTO;
 import be.ephec.pdw.padel.dto.MatchReponseDTO;
 import be.ephec.pdw.padel.model.*;
@@ -20,9 +21,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class MatchService {
-    private static final int NOMBRE_JOUEURS_REQUIS = 4;
-    private static final int DUREE_PENALITE_JOURS = 7;
-    // TODO [IMPORTANT][ARCHITECTURE] Centraliser les constantes metier partagees (joueurs requis, duree de penalite, prix, duree d'un creneau).
+    private static final int NOMBRE_JOUEURS_REQUIS = BusinessConstants.MAX_PLAYERS_PER_MATCH;
 
     private final MembreRepository membreRepository;
     private final TerrainRepository terrainRepository;
@@ -123,7 +122,8 @@ public class MatchService {
                 match.getTerrain().getSite().getId(),
                 match.getTerrain().getSite().getName(),
                 match.getOrganisateur().getMatricule(),
-                estPublic
+                estPublic,
+                match.getStatut()
         );
     }
 
@@ -199,10 +199,10 @@ public class MatchService {
             if (nbJoueursPayes < NOMBRE_JOUEURS_REQUIS){
                 Membre organisateur = match.getOrganisateur();
                 organisateur.setPenaliteActive(true);
-                organisateur.setFinPenalite(maintenant.plusDays(DUREE_PENALITE_JOURS));
+                organisateur.setFinPenalite(maintenant.plusDays(BusinessConstants.PENALTY_DURATION_DAYS));
 
-                double total = 60;
-                double dejaPaye = nbJoueursPayes * 15;
+                double total = BusinessConstants.MATCH_TOTAL_PRICE;
+                double dejaPaye = nbJoueursPayes * BusinessConstants.MATCH_PRICE_PER_PLAYER;
                 double reste = total - dejaPaye;
                 organisateur.setSoldeDu(reste);
                 membreRepository.save(organisateur);

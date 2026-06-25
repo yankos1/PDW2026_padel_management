@@ -1,6 +1,7 @@
 package be.ephec.pdw.padel.service;
 
 import be.ephec.pdw.padel.configuration.BusinessRuleException;
+import be.ephec.pdw.padel.configuration.BusinessConstants;
 import be.ephec.pdw.padel.dto.MatchReponseDTO;
 import be.ephec.pdw.padel.dto.ReservationReponseDTO;
 import be.ephec.pdw.padel.model.*;
@@ -19,8 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class ReservationService {
-    private static final int NOMBRE_JOUEURS_REQUIS = 4;
-    // TODO [IMPORTANT][ARCHITECTURE] Centraliser le prix par joueur et le nombre maximal de joueurs pour eviter les valeurs metier dupliquees.
+    private static final int NOMBRE_JOUEURS_REQUIS = BusinessConstants.MAX_PLAYERS_PER_MATCH;
 
     private final MatchRepository matchRepository;
     private final MembreRepository membreRepository;
@@ -152,7 +152,7 @@ public class ReservationService {
 
         // gestion de dette
         Membre membre = reservation.getMembre();
-        double montant = 15; // prix du match par personne si 4
+        double montant = BusinessConstants.MATCH_PRICE_PER_PLAYER; // prix du match par personne si 4
 
         if (membre.getSoldeDu() > 0) {
             montant += membre.getSoldeDu();
@@ -205,9 +205,12 @@ public class ReservationService {
                                 reservation.getMatch().getTerrain().getSite().getId(),
                                 reservation.getMatch().getTerrain().getSite().getName(),
                                 reservation.getMatch().getOrganisateur().getMatricule(),
-                                reservation.getMatch().isEstPublic()
+                                reservation.getMatch().isEstPublic(),
+                                reservation.getMatch().getStatut()
                         ),
-                        reservation.isEstPayee()
+                        reservation.isEstPayee(),
+                        reservation.isEstPayee(),
+                        reservation.getStatut()
                 ))
                 .toList();
     }

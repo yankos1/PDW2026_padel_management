@@ -1,5 +1,7 @@
 package be.ephec.pdw.padel.dto;
 
+import be.ephec.pdw.padel.model.StatutMatch;
+
 import java.time.LocalDateTime;
 
 public record MatchReponseDTO(
@@ -10,6 +12,7 @@ public record MatchReponseDTO(
         Long siteId,
         String site,
         String organisateurMatricule,
-        boolean estPublic
+        boolean estPublic,
+        StatutMatch statut
 ) {
 }

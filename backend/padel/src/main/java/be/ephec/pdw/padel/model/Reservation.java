@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Entity
-// TODO [IMPORTANT][ARCHITECTURE] Ajouter une contrainte unique sur le couple match/membre.
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"match_id", "membre_matricule"}))
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -29,7 +29,7 @@ public class Reservation {
 
     private LocalDateTime dateReservation;
     private LocalDateTime datePaiement;
-    private double montant; // total 60euros = 15 par joueurs
+    private double montant;
     private boolean estPayee;
 
     @Enumerated(EnumType.STRING)

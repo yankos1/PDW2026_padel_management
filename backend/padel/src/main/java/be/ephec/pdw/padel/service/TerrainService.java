@@ -1,6 +1,7 @@
 package be.ephec.pdw.padel.service;
 
 import be.ephec.pdw.padel.configuration.BusinessRuleException;
+import be.ephec.pdw.padel.configuration.BusinessConstants;
 import be.ephec.pdw.padel.dto.TerrainDTO;
 import be.ephec.pdw.padel.model.Site;
 import be.ephec.pdw.padel.model.Terrain;
@@ -76,7 +77,7 @@ public class TerrainService {
         LocalTime current = open;
 
         while (true) {
-            LocalTime end = current.plusMinutes(90);
+            LocalTime end = current.plusMinutes(BusinessConstants.SLOT_DURATION_MINUTES);
 
             if (end.isAfter(close)) break;
 
@@ -87,7 +88,7 @@ public class TerrainService {
 
             if (!exists) return true;
 
-            current = current.plusMinutes(105); // 90 + 15
+            current = current.plusMinutes(BusinessConstants.SLOT_DURATION_MINUTES + BusinessConstants.SLOT_GAP_MINUTES);
         }
 
         return false;
@@ -119,7 +120,7 @@ public class TerrainService {
             LocalTime current = open;
 
             while (true) {
-                LocalTime end = current.plusMinutes(90);
+                LocalTime end = current.plusMinutes(BusinessConstants.SLOT_DURATION_MINUTES);
 
                 if (end.isAfter(close)) break;
 
@@ -132,7 +133,7 @@ public class TerrainService {
                     slots.add(current.toString());
                 }
 
-                current = current.plusMinutes(105);
+                current = current.plusMinutes(BusinessConstants.SLOT_DURATION_MINUTES + BusinessConstants.SLOT_GAP_MINUTES);
             }
         }
 

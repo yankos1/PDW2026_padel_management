@@ -1,5 +1,6 @@
 package be.ephec.pdw.padel.model;
 
+import be.ephec.pdw.padel.configuration.BusinessConstants;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 
@@ -8,6 +9,6 @@ import jakarta.persistence.Entity;
 public class MembreGlobal extends Membre {
     @Override
     public long getDelaiReservations() {
-        return 21;
+        return BusinessConstants.GLOBAL_MEMBER_RESERVATION_DAYS;
     }
 }

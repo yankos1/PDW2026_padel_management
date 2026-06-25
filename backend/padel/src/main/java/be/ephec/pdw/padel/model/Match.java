@@ -10,8 +10,10 @@ import java.time.LocalTime;
 import java.util.List;
 
 @Entity
-// TODO [IMPORTANT][ARCHITECTURE] Ajouter une contrainte unique sur terrain_id et dateHeureDebut.
-@Table(name = "match_padel") // mot sql
+@Table(
+        name = "match_padel",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"terrain_id", "date_heure_debut"})
+)
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
