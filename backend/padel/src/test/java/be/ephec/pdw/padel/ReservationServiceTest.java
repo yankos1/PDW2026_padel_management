@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ReservationService")
 class ReservationServiceTest {
+    // TODO [IMPORTANT][TEST] Ajouter des tests pour match complet, deja reserve, prive, annule et membre avec penalite active.
 
     @Mock private MatchRepository matchRepository;
     @Mock private MembreRepository membreRepository;

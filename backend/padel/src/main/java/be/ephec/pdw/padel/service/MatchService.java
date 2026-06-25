@@ -22,6 +22,7 @@ import java.util.List;
 public class MatchService {
     private static final int NOMBRE_JOUEURS_REQUIS = 4;
     private static final int DUREE_PENALITE_JOURS = 7;
+    // TODO [IMPORTANT][ARCHITECTURE] Centraliser les constantes metier partagees (joueurs requis, duree de penalite, prix, duree d'un creneau).
 
     private final MembreRepository membreRepository;
     private final TerrainRepository terrainRepository;
@@ -47,7 +48,6 @@ public class MatchService {
         Terrain terrain = terrainRepository.findById(idTerrain)
                 .orElseThrow(() -> new BusinessRuleException("Terrain introuvable"));
 
-        // TODO [IMPORTANT] Ajouter une contrainte DB terrain/date pour eviter les doubles reservations concurrentes.
         if (matchRepository.existsByTerrainAndDateHeureDebut(terrain, dateHeure)) {
             throw new BusinessRuleException("Terrain déjà réservé à cette heure");
         }

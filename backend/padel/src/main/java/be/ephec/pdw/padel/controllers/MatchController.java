@@ -26,6 +26,7 @@ public class MatchController {
     private final TerrainRepository terrainRepository;
     private final SiteRepository siteRepository;
 
+    // TODO [IMPORTANT][SECURITE] Recuperer l'organisateur depuis l'utilisateur authentifie au lieu de lire organisateur_matricule dans le DTO.
     @PostMapping
     public MatchReponseDTO createMatch(@RequestBody MatchDTO.PostInput input) {
         //return matchService.creerMatch(input.getOrganisateur_matricule(), input.getTerrainID(),input.getDate(),input.isEstPublic());
@@ -114,7 +115,7 @@ public class MatchController {
      *********/
 
     @GetMapping("/sites")
-    // TODO [IMPORTANT] Retourner un SiteDTO pour ne pas exposer directement l'entite JPA.
+    // TODO [IMPORTANT][ARCHITECTURE] Retourner un SiteDTO pour ne pas exposer directement l'entite JPA.
     public List<Site> getSites() {
         return siteRepository.findAll();
     }

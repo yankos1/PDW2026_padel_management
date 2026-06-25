@@ -30,7 +30,7 @@ public class AdminService {
     private final TerrainRepository terrainRepository;
     private final SiteRepository siteRepository;
 
-    // TODO [IMPORTANT] Optimiser les statistiques admin avec des requetes repository agregees.
+    // TODO [IMPORTANT][ARCHITECTURE] Remplacer les findAll().stream() des statistiques admin par des requetes repository agregees filtrees par role et site.
     public long nombreMatchs(String matricule) {
         Membre admin = getAdmin(matricule);
         return matchRepository.findAll().stream()

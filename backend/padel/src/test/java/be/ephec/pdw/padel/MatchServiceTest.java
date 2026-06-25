@@ -25,7 +25,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("MatchService")
-// TODO [IMPORTANT] Ajouter des tests unitaires et d'integration pour les scenarios metier critiques.
+// TODO [IMPORTANT][TEST] Completer les tests MatchService sur paiement, penalite, passage prive vers public et double reservation concurrente.
 class MatchServiceTest {
 
     @Mock private MembreRepository membreRepository;

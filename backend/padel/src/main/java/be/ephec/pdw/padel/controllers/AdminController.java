@@ -17,7 +17,7 @@ import java.util.Map;
 public class AdminController {
     private final AdminService adminService;
 
-    // TODO [IMPORTANT] Remplacer X-User-Matricule par l'utilisateur authentifie via JWT cote serveur.
+    // TODO [IMPORTANT][SECURITE] Remplacer X-User-Matricule par l'utilisateur authentifie via JWT cote serveur.
     @GetMapping("/matchs")
     public long nombreMatchs(@RequestHeader("X-User-Matricule") String matricule) {
         return adminService.nombreMatchs(matricule);

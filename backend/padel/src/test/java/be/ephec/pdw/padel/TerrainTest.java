@@ -17,7 +17,7 @@ public class TerrainTest {
     @Autowired
     TerrainService terrainService;
 
-    // TODO [IMPORTANT] Isoler ce test avec un profil test et une base controlee.
+    // TODO [IMPORTANT][TEST] Isoler ce test avec un profil test, H2 et des donnees controlees.
     @Test
     void shouldReturnAvailableTerrains() {
         LocalDate date = LocalDate.of(2026, 5, 22);

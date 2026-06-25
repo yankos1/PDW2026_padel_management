@@ -43,6 +43,7 @@ export class MatchListComponent implements OnInit {
   ) {}
 
   ngOnInit() {
+    // TODO [IMPORTANT][UX] Ajouter un etat loading et un etat vide quand aucun match public n'est disponible.
     const matricule = this.authService.getMatricule();
 
     if (!matricule) {

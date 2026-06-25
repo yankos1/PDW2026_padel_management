@@ -45,6 +45,7 @@ export class Admin implements OnInit {
   ) {}
 
   ngOnInit() {
+    // TODO [IMPORTANT][UX] Ne pas masquer les erreurs du dashboard admin par des valeurs a 0; afficher une erreur partielle par statistique indisponible.
     if (!this.authService.isAdmin()) {
       this.error = 'Acces refuse';
       this.loading = false;

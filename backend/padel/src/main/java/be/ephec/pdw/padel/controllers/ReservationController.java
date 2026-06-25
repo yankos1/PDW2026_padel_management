@@ -18,11 +18,12 @@ public class ReservationController {
 
 
     @PostMapping("/rejoindre")
-    // TODO [IMPORTANT] Recuperer le membre connecte depuis le JWT, pas depuis le body.
+    // TODO [IMPORTANT][SECURITE] Recuperer le membre connecte depuis le JWT, pas depuis le body.
     public Reservation rejoindre(@RequestBody ReservationDTO.PostInput input) {
         return reservationService.rejoindreMatch(input.getMatricule(), input.getMatchId());
     }
 
+    // TODO [IMPORTANT][SECURITE] Verifier cote serveur que l'organisateur provient de l'utilisateur authentifie avant d'ajouter un joueur prive.
     @PostMapping("/match-prive/ajouter-joueur")
     public Reservation ajouterJoueurMatchPrive(@RequestBody ReservationDTO.AjoutJoueurPriveInput input) {
         return reservationService.ajouterJoueurMatchPrive(
@@ -32,13 +33,14 @@ public class ReservationController {
         );
     }
 
+    // TODO [IMPORTANT][SECURITE] Verifier que la reservation payee appartient a l'utilisateur connecte ou a un admin.
     @PutMapping("/{id}/payer")
     public Reservation payerReservation(@PathVariable Long id){
         return reservationService.payerReservation(id);
     }
 
     @GetMapping("/membre/{matricule}")
-    // TODO [IMPORTANT] Verifier que le membre demande correspond a l'utilisateur connecte ou a un admin.
+    // TODO [IMPORTANT][SECURITE] Verifier que le membre demande correspond a l'utilisateur connecte ou a un admin.
     public List<ReservationReponseDTO> getReservationsByMembre(@PathVariable String matricule) {
         return reservationService.getReservationsByMembre(matricule);
     }

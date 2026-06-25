@@ -16,9 +16,9 @@ import java.util.Map;
 public class AuthController {
     private final AuthService authService;
 
-    // TODO [IMPORTANT] Mettre en place Spring Security avec JWT pour authentifier les appels API.
+    // TODO [IMPORTANT][SECURITE] Mettre en place Spring Security avec JWT et prevoir un rate limiting sur la connexion.
     @PostMapping("/login")
-    // TODO [IMPORTANT] Remplacer le retour d'entite JPA par un DTO de session minimal.
+    // TODO [IMPORTANT][ARCHITECTURE] Retourner un SessionDTO minimal plutot que l'entite Membre afin de ne pas exposer directement le modele JPA.
     public Membre login(@RequestBody LoginDTO input) {
         return authService.login(input);
     }
@@ -29,7 +29,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    // TODO [IMPORTANT] Valider les champs d'inscription avec Bean Validation avant le service.
+    // TODO [IMPORTANT][SECURITE] Valider RegisterDTO avec @Valid, @NotBlank et @Email avant l'appel au service.
     public Membre register(@RequestBody RegisterDTO input) {
         return authService.register(input);
     }

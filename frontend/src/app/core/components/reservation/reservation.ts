@@ -10,7 +10,6 @@ import { AuthService } from '../../services/auth.service';
   styleUrl: './reservation.css',
 })
 export class Reservation {
-  // TODO [BONUS] Supprimer ou completer cette page si l'inscription reste geree par la liste des matchs.
   constructor(private reservationService: ReservationService, private authService: AuthService) {
   }
 

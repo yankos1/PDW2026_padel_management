@@ -20,6 +20,7 @@ import java.util.List;
 @Slf4j
 public class ReservationService {
     private static final int NOMBRE_JOUEURS_REQUIS = 4;
+    // TODO [IMPORTANT][ARCHITECTURE] Centraliser le prix par joueur et le nombre maximal de joueurs pour eviter les valeurs metier dupliquees.
 
     private final MatchRepository matchRepository;
     private final MembreRepository membreRepository;
