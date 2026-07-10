@@ -3,16 +3,19 @@ import { vi } from 'vitest';
 import { MatchListComponent } from './match-list.component';
 
 describe('MatchListComponent', () => {
-  it('keeps available matches when reservations fail', () => {
-    const matchs = Array.from({ length: 7 }, (_, index) => ({
-      id: index + 1,
-      dateHeureDebut: new Date(Date.now() + 60_000).toISOString(),
-    }));
+  it('keeps previous matches and shows an error when reservations fail', () => {
     const matchService = {
-      getMatchDisponibles: vi.fn().mockReturnValue(of(matchs)),
+      getMatchDisponibles: vi.fn().mockReturnValue(of([])),
     };
     const reservationService = {
-      getMesReservations: vi.fn().mockReturnValue(throwError(() => new Error('401'))),
+      getMesReservations: vi.fn().mockReturnValue(throwError(() => ({
+        error: {
+          status: 401,
+          message: 'Authentification requise',
+          timestamp: '2026-07-10T18:00:00Z',
+          fieldErrors: {},
+        },
+      }))),
       rejoindreMatch: vi.fn(),
       payerReservation: vi.fn(),
     };
@@ -28,11 +31,12 @@ describe('MatchListComponent', () => {
       reservationService as any,
       authService as any,
     );
+    component.matchs.set([{ id: 99, dateHeureDebut: new Date(Date.now() + 60_000).toISOString() }]);
 
     component.ngOnInit();
 
-    expect(component.matchs().length).toBe(7);
-    expect(component.error()).toBe('Impossible de charger vos reservations.');
+    expect(component.matchs().map((match: any) => match.id)).toEqual([99]);
+    expect(component.error()).toBe('Authentification requise');
     expect(matchService.getMatchDisponibles).toHaveBeenCalledTimes(1);
     expect(reservationService.getMesReservations).toHaveBeenCalledTimes(1);
   });

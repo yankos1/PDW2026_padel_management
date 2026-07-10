@@ -14,6 +14,7 @@ import { MatButton } from '@angular/material/button';
 import { FormsModule } from '@angular/forms';
 import { MatInput } from '@angular/material/input';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { getApiErrorMessage } from '../../utils/api-error.util';
 
 @Component({
   selector: 'app-mes-reservations',
@@ -71,7 +72,7 @@ export class MesReservations {
       },
       error: (err) => {
         console.error('Erreur paiement', err);
-        alert('Erreur lors du paiement');
+        alert(getApiErrorMessage(err, 'Erreur lors du paiement'));
       }
     });
   }
@@ -97,7 +98,7 @@ export class MesReservations {
       },
       error: (err) => {
         this.erreursAjout[reservation.match.id] =
-          err.error?.message || err.error || 'Erreur lors de l ajout du joueur';
+          getApiErrorMessage(err, 'Erreur lors de l ajout du joueur');
       },
     });
   }

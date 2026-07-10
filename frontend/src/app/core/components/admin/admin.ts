@@ -1,9 +1,10 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
-import { catchError, combineLatest, of } from 'rxjs';
+import { combineLatest } from 'rxjs';
 import { AdminService } from '../../services/admin.service';
 import { AuthService } from '../../services/auth.service';
 import { Site } from '../../models/site';
+import { getApiErrorMessage } from '../../utils/api-error.util';
 
 import {
   MatCard,
@@ -45,7 +46,6 @@ export class Admin implements OnInit {
   ) {}
 
   ngOnInit() {
-    // TODO [IMPORTANT][UX] Ne pas masquer les erreurs du dashboard admin par des valeurs a 0; afficher une erreur partielle par statistique indisponible.
     if (!this.authService.isAdmin()) {
       this.error = 'Acces refuse';
       this.loading = false;
@@ -58,14 +58,15 @@ export class Admin implements OnInit {
       return;
     }
 
+    this.error = '';
     combineLatest([
-      this.adminService.getMatchs().pipe(catchError(() => of(0))),
-      this.adminService.getCA().pipe(catchError(() => of(0))),
-      this.adminService.getMembres().pipe(catchError(() => of(0))),
-      this.adminService.getTerrains().pipe(catchError(() => of(0))),
-      this.adminService.getTauxRemplissage().pipe(catchError(() => of(0))),
-      this.adminService.getRevenusParSite().pipe(catchError(() => of({}))),
-      this.adminService.getSites().pipe(catchError(() => of([]))),
+      this.adminService.getMatchs(),
+      this.adminService.getCA(),
+      this.adminService.getMembres(),
+      this.adminService.getTerrains(),
+      this.adminService.getTauxRemplissage(),
+      this.adminService.getRevenusParSite(),
+      this.adminService.getSites(),
     ]).subscribe({
       next: ([matchs, ca, membres, terrains, taux, revenus, sites]) => {
         this.matchs = matchs;
@@ -80,7 +81,7 @@ export class Admin implements OnInit {
       },
       error: (err) => {
         console.error(err);
-        this.error = 'Erreur globale';
+        this.error = getApiErrorMessage(err, 'Impossible de charger le dashboard admin');
         this.loading = false;
         this.cdr.detectChanges();
       },

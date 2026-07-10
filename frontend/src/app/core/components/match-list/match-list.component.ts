@@ -13,7 +13,8 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { ReservationService } from '../../services/reservation.service';
 import { AuthService } from '../../services/auth.service';
-import { catchError, forkJoin, of } from 'rxjs';
+import { forkJoin } from 'rxjs';
+import { getApiErrorMessage } from '../../utils/api-error.util';
 
 @Component({
   selector: 'app-match-list',
@@ -55,12 +56,7 @@ export class MatchListComponent implements OnInit {
     this.error.set(null);
     forkJoin({
       matchs: this.matchService.getMatchDisponibles(),
-      reservations: this.reservationService.getMesReservations(matricule).pipe(
-        catchError(() => {
-          this.error.set('Impossible de charger vos reservations.');
-          return of([]);
-        }),
-      ),
+      reservations: this.reservationService.getMesReservations(matricule),
     }).subscribe({
       next: ({ matchs, reservations }) => {
         const matchReserveId = reservations.map((r: any) => r.match.id);
@@ -70,9 +66,8 @@ export class MatchListComponent implements OnInit {
 
         this.matchs.set(matchFiltre);
       },
-      error: () => {
-        this.matchs.set([]);
-        this.error.set('Impossible de charger les matchs publics disponibles.');
+      error: (err) => {
+        this.error.set(getApiErrorMessage(err, 'Impossible de charger les matchs publics disponibles.'));
       },
     });
   }
@@ -101,7 +96,7 @@ export class MatchListComponent implements OnInit {
           alert('Reservation en attente de paiement');
         },
         error: (err) => {
-          alert(err.error?.message || err.error || 'Reservation impossible');
+          alert(getApiErrorMessage(err, 'Reservation impossible'));
         },
       });
   }
@@ -125,13 +120,13 @@ export class MatchListComponent implements OnInit {
             this.ngOnInit();
           },
           error: (err) => {
-            alert(err.error?.message || err.error || 'Paiement impossible');
+            alert(getApiErrorMessage(err, 'Paiement impossible'));
             this.ngOnInit();
           },
         });
       },
       error: (err) => {
-        alert(err.error?.message || err.error || 'Reservation impossible');
+        alert(getApiErrorMessage(err, 'Reservation impossible'));
       },
     });
   }

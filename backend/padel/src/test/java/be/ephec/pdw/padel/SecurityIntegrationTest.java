@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -61,20 +62,32 @@ class SecurityIntegrationTest {
     void shouldRejectOtherMemberReservationsWithForbidden() throws Exception {
         mockMvc.perform(get("/reservation/membre/G0003")
                         .header("Authorization", bearer(userToken())))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.message").value("Acces refuse"))
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.fieldErrors").isEmpty());
     }
 
     @Test
     void shouldRejectReservationsWithoutJwt() throws Exception {
         mockMvc.perform(get("/reservation/membre/G0002"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.message").value("Authentification requise"))
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.fieldErrors").isEmpty());
     }
 
     @Test
     void shouldRejectReservationsWithInvalidJwt() throws Exception {
         mockMvc.perform(get("/reservation/membre/G0002")
                         .header("Authorization", bearer("invalid-token")))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.message").value("Authentification requise"))
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.fieldErrors").isEmpty());
     }
 
     @Test
@@ -93,6 +106,17 @@ class SecurityIntegrationTest {
         mockMvc.perform(get("/match/disponibles")
                         .header("Authorization", bearer(userToken())))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldRejectAdminEndpointForUserWithUniformForbiddenResponse() throws Exception {
+        mockMvc.perform(get("/admin/matchs")
+                        .header("Authorization", bearer(userToken())))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.message").value("Accès interdit"))
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.fieldErrors").isEmpty());
     }
 
     private String userToken() {

@@ -19,6 +19,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class AuthControllerTest {
@@ -58,7 +60,11 @@ class AuthControllerTest {
         mockMvc.perform(post("/auth/login")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(login("G9999", null))))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.message").value("Identifiants invalides"))
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.fieldErrors").isEmpty());
     }
 
     @Test
@@ -93,6 +99,19 @@ class AuthControllerTest {
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(login("G0001", "wrong-password"))))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void shouldReturnValidationFieldErrorsForInvalidLoginInput() throws Exception {
+        mockMvc.perform(post("/auth/login")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(login("INVALID", null))))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith("application/json"))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value("Données invalides"))
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.fieldErrors.matricule").value("Matricule invalide"));
     }
 
     private LoginDTO login(String matricule, String password) {

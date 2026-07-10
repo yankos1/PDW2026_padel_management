@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { ReservationService } from '../../services/reservation.service';
 import { AuthService } from '../../services/auth.service';
+import { getApiErrorMessage } from '../../utils/api-error.util';
 
 
 @Component({
@@ -35,7 +36,7 @@ export class Reservation {
         },
         error:(err) =>{
           console.error(err);
-          alert(err.error.message);
+          alert(getApiErrorMessage(err, 'Inscription impossible'));
         }
       });
   }

@@ -8,6 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { getApiErrorMessage } from '../../utils/api-error.util';
 
 @Component({
   selector: 'app-login',
@@ -165,11 +166,7 @@ export class LoginComponent {
     });
   }
 
-  private errorMessage(err: any, fallback: string): string {
-    if (typeof err.error === 'string') {
-      return err.error;
-    }
-
-    return err.error?.message || fallback;
+  private errorMessage(err: unknown, fallback: string): string {
+    return getApiErrorMessage(err, fallback);
   }
 }

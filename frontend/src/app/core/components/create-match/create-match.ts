@@ -9,6 +9,7 @@ import { Terrain } from '../../models/terrain';
 import { MatCard } from '@angular/material/card';
 import { Site } from '../../models/site';
 import { AuthService } from '../../services/auth.service';
+import { getApiErrorMessage } from '../../utils/api-error.util';
 
 @Component({
   selector: 'app-create-match',
@@ -52,7 +53,7 @@ export class CreateMatch implements OnInit {
         console.log('sites:', data);
         this.sites.set(data);
       },
-      error: () => this.error.set('Erreur chargement des sites'),
+      error: (err) => this.error.set(getApiErrorMessage(err, 'Erreur chargement des sites')),
     });
   }
 
@@ -93,7 +94,7 @@ export class CreateMatch implements OnInit {
     this.matchService.createMatch(dto).subscribe({
       next: () => this.router.navigate(['/mes-reservations']),
       error: (err) =>
-        this.error.set(err.error?.message || err.error || 'Erreur lors de la creation'),
+        this.error.set(getApiErrorMessage(err, 'Erreur lors de la creation')),
     });
   }
 
@@ -176,7 +177,7 @@ export class CreateMatch implements OnInit {
       next: (data) => (this.slots = data),
       error: (err) => {
         console.error('ERREUR BACK:', err);
-        this.error.set(err.error?.message || 'Erreur chargement terrains');
+        this.error.set(getApiErrorMessage(err, 'Erreur chargement terrains'));
       },
     });
   }
@@ -202,7 +203,7 @@ export class CreateMatch implements OnInit {
         },
         error: (err) => {
           console.error(err);
-          this.error.set('Erreur chargement terrains');
+          this.error.set(getApiErrorMessage(err, 'Erreur chargement terrains'));
         },
       });
   }

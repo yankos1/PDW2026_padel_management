@@ -1,6 +1,8 @@
 package be.ephec.pdw.padel.configuration;
 
+import be.ephec.pdw.padel.exception.ErrorResponse;
 import be.ephec.pdw.padel.security.JwtAuthenticationFilter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,6 +23,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableMethodSecurity
 public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final ObjectMapper objectMapper;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -36,7 +39,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint((request, response, authenticationException) ->
                                 writeError(response, HttpStatus.UNAUTHORIZED, "Authentification requise"))
                         .accessDeniedHandler((request, response, accessDeniedException) ->
-                                writeError(response, HttpStatus.FORBIDDEN, "Acces refuse"))
+                                writeError(response, HttpStatus.FORBIDDEN, "Accès interdit"))
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
@@ -66,6 +69,6 @@ public class SecurityConfig {
             throws java.io.IOException {
         response.setStatus(status.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.getWriter().write("{\"status\":" + status.value() + ",\"message\":\"" + message + "\"}");
+        objectMapper.writeValue(response.getWriter(), ErrorResponse.of(status, message));
     }
 }
