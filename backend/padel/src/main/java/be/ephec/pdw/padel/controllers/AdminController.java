@@ -1,10 +1,11 @@
 package be.ephec.pdw.padel.controllers;
 
+import be.ephec.pdw.padel.service.CurrentUserService;
 import be.ephec.pdw.padel.model.Site;
 import be.ephec.pdw.padel.service.AdminService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -14,47 +15,52 @@ import java.util.Map;
 @RestController
 @RequestMapping("/admin")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('ADMIN_SITE', 'ADMIN_GLOBAL')")
 public class AdminController {
     private final AdminService adminService;
+    private final CurrentUserService currentUserService;
 
-    // TODO [IMPORTANT][SECURITE] Remplacer X-User-Matricule par l'utilisateur authentifie via JWT cote serveur.
     @GetMapping("/matchs")
-    public long nombreMatchs(@RequestHeader("X-User-Matricule") String matricule) {
-        return adminService.nombreMatchs(matricule);
+    public long nombreMatchs() {
+        return adminService.nombreMatchs(currentMatricule());
     }
 
     @GetMapping("/ca")
-    public double chiffreAffaires(@RequestHeader("X-User-Matricule") String matricule) {
-        return adminService.chiffreAffaires(matricule);
+    public double chiffreAffaires() {
+        return adminService.chiffreAffaires(currentMatricule());
     }
 
     @GetMapping("/membres")
-    public long nombreMembres(@RequestHeader("X-User-Matricule") String matricule) {
-        return adminService.nombreMembres(matricule);
+    public long nombreMembres() {
+        return adminService.nombreMembres(currentMatricule());
     }
 
     @GetMapping("/terrains")
-    public long nombreTerrains(@RequestHeader("X-User-Matricule") String matricule) {
-        return adminService.nombreTerrains(matricule);
+    public long nombreTerrains() {
+        return adminService.nombreTerrains(currentMatricule());
     }
 
     @GetMapping("/matchs-complets")
-    public long matchsComplets(@RequestHeader("X-User-Matricule") String matricule) {
-        return adminService.matchsComplets(matricule);
+    public long matchsComplets() {
+        return adminService.matchsComplets(currentMatricule());
     }
 
     @GetMapping("/taux-remplissage")
-    public double tauxRemplissage(@RequestHeader("X-User-Matricule") String matricule) {
-        return adminService.tauxRemplissage(matricule);
+    public double tauxRemplissage() {
+        return adminService.tauxRemplissage(currentMatricule());
     }
 
     @GetMapping("/revenus-par-site")
-    public Map<String, Double> revenusParSite(@RequestHeader("X-User-Matricule") String matricule) {
-        return adminService.revenusParSite(matricule);
+    public Map<String, Double> revenusParSite() {
+        return adminService.revenusParSite(currentMatricule());
     }
 
     @GetMapping("/sites")
-    public List<Site> sites(@RequestHeader("X-User-Matricule") String matricule) {
-        return adminService.sites(matricule);
+    public List<Site> sites() {
+        return adminService.sites(currentMatricule());
+    }
+
+    private String currentMatricule() {
+        return currentUserService.getCurrentUser().getMatricule();
     }
 }

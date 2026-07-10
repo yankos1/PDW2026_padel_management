@@ -1,6 +1,6 @@
 package be.ephec.pdw.padel;
 
-import be.ephec.pdw.padel.configuration.BusinessRuleException;
+import be.ephec.pdw.padel.exception.BusinessRuleException;
 import be.ephec.pdw.padel.model.*;
 import be.ephec.pdw.padel.repositories.MatchRepository;
 import be.ephec.pdw.padel.repositories.MembreRepository;

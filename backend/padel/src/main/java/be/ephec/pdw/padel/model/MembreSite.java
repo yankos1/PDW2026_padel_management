@@ -1,6 +1,6 @@
 package be.ephec.pdw.padel.model;
 
-import be.ephec.pdw.padel.configuration.BusinessConstants;
+import be.ephec.pdw.padel.constants.BusinessConstants;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToOne;

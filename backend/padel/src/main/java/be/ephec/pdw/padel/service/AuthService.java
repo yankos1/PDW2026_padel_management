@@ -1,6 +1,6 @@
 package be.ephec.pdw.padel.service;
 
-import be.ephec.pdw.padel.configuration.BusinessRuleException;
+import be.ephec.pdw.padel.exception.BusinessRuleException;
 import be.ephec.pdw.padel.dto.LoginDTO;
 import be.ephec.pdw.padel.dto.RegisterDTO;
 import be.ephec.pdw.padel.model.Membre;
@@ -8,28 +8,54 @@ import be.ephec.pdw.padel.model.MembreLibre;
 import be.ephec.pdw.padel.model.Role;
 import be.ephec.pdw.padel.repositories.MembreRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
 import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
     private final MembreRepository membreRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final LoginAttemptService loginAttemptService;
+    private final AuthenticationManager authenticationManager;
 
     public Membre login(LoginDTO input) {
-        Membre membre = membreRepository.findById(normalizeMatricule(input.getMatricule()))
-                .orElseThrow(() -> new BusinessRuleException("Invalid matricule"));
+        String matricule = normalizeMatricule(input.getMatricule());
+        loginAttemptService.assertNotBlocked(matricule);
 
-        if (isAdmin(membre)) {
-            validateAdminPassword(membre, input.getPassword());
+        try {
+            Membre membre = membreRepository.findById(matricule)
+                    .orElseThrow(() -> new BadCredentialsException("Identifiants invalides"));
+
+            if (membre.getRole() == null) {
+                throw new BadCredentialsException("Identifiants invalides");
+            }
+
+            if (membre.getRole() == Role.USER) {
+                loginAttemptService.loginSucceeded(matricule);
+                return membre;
+            }
+
+            if (isAdmin(membre) && hasNoAdminPassword(membre)) {
+                configureFirstAdminPassword(membre, input.getPassword());
+            }
+
+            if (input.getPassword() == null || input.getPassword().isBlank()) {
+                throw new BadCredentialsException("Identifiants invalides");
+            }
+
+            authenticate(matricule, input.getPassword());
+            loginAttemptService.loginSucceeded(matricule);
+            return membre;
+        } catch (BusinessRuleException | BadCredentialsException e) {
+            loginAttemptService.loginFailed(matricule);
+            throw new BadCredentialsException("Identifiants invalides");
         }
-
-        return membre;
     }
 
     public Map<String, Boolean> adminPasswordStatus(String matricule) {
@@ -40,7 +66,7 @@ public class AuthService {
 
         return Map.of(
                 "admin", admin,
-                "passwordCreation", admin && (membre.getAdminPasswordHash() == null || membre.getAdminPasswordHash().isBlank())
+                "passwordCreation", admin && hasNoAdminPassword(membre)
         );
     }
 
@@ -60,7 +86,7 @@ public class AuthService {
                 .findTopByMatriculeStartingWithOrderByMatriculeDesc("L")
                 .map(Membre::getMatricule)
                 .map(this::nextLibreMatricule)
-                .orElse("L0001"); //cas si pas encore de membre libre dans la db
+                .orElse("L0001");//cas si pas encore de membre libre dans la db
     }
 
     private String nextLibreMatricule(String currentMatricule) {
@@ -72,44 +98,27 @@ public class AuthService {
         return membre.getRole() == Role.ADMIN_GLOBAL || membre.getRole() == Role.ADMIN_SITE;
     }
 
-    private void validateAdminPassword(Membre membre, String password) {
-        if (membre.getAdminPasswordHash() == null || membre.getAdminPasswordHash().isBlank()) {
-            configureFirstAdminPassword(membre, password);
-            return;
-        }
-
-        if (password == null || password.isBlank()) {
-            throw new BusinessRuleException("Mot de passe admin requis");
-        }
-
-        if (!MessageDigest.isEqual(hash(password).getBytes(StandardCharsets.UTF_8),
-                membre.getAdminPasswordHash().getBytes(StandardCharsets.UTF_8))) {
-            throw new BusinessRuleException("Mot de passe admin incorrect");
-        }
-    }
-
     private void configureFirstAdminPassword(Membre membre, String password) {
         if (password == null || password.isBlank()) {
             throw new BusinessRuleException("Creation du mot de passe admin requise");
         }
 
-        if (password.length() < 6) {
-            throw new BusinessRuleException("Le mot de passe admin doit contenir au moins 6 caracteres");
+        if (password.length() < 12) {
+            throw new BusinessRuleException("Le mot de passe admin doit contenir au moins 12 caracteres");
         }
 
-        membre.setAdminPasswordHash(hash(password));
+        membre.setAdminPasswordHash(passwordEncoder.encode(password));
         membreRepository.save(membre);
     }
 
-    private String hash(String value) {
-        try {
-            // TODO [IMPORTANT][SECURITE] Remplacer SHA-256 par BCrypt pour le stockage securise des mots de passe.
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] encodedHash = digest.digest(value.getBytes(StandardCharsets.UTF_8));
-            return Base64.getEncoder().encodeToString(encodedHash);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 indisponible", e);
-        }
+    private void authenticate(String matricule, String password) {
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(matricule, password == null ? "" : password)
+        );
+    }
+
+    private boolean hasNoAdminPassword(Membre membre) {
+        return membre.getAdminPasswordHash() == null || membre.getAdminPasswordHash().isBlank();
     }
 
     private String normalizeMatricule(String matricule) {

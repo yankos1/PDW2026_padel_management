@@ -13,6 +13,6 @@ export class App {
 
   //TO DO later
   get isLoggedIn(): boolean {
-    return !!localStorage.getItem('user');
+    return !!sessionStorage.getItem('user');
   }
 }

@@ -1,6 +1,6 @@
 package be.ephec.pdw.padel.service;
 
-import be.ephec.pdw.padel.configuration.ForbiddenException;
+import be.ephec.pdw.padel.exception.ForbiddenException;
 import be.ephec.pdw.padel.model.Match;
 import be.ephec.pdw.padel.model.Membre;
 import be.ephec.pdw.padel.model.MembreSite;

@@ -37,17 +37,23 @@ export class AuthService {
   }
 
   setUser(user: Membre) {
-    // TODO [IMPORTANT][SECURITE] Remplacer localStorage par une gestion de token JWT validee par le backend.
-    localStorage.setItem('user', JSON.stringify(user));
+    sessionStorage.setItem('user', JSON.stringify(user));
+    if (user.token) {
+      sessionStorage.setItem('token', user.token);
+    }
   }
 
   getUser(): Membre | null {
-    return JSON.parse(localStorage.getItem('user') || 'null') as Membre | null;
+    return JSON.parse(sessionStorage.getItem('user') || 'null') as Membre | null;
   }
 
   getMatricule(): string | null {
     const user = this.getUser();
     return user?.matricule?.trim().toUpperCase() ?? null;
+  }
+
+  getToken(): string | null {
+    return sessionStorage.getItem('token') || this.getUser()?.token || null;
   }
 
   getTypeMembre(): TypeMembre | null {
@@ -154,7 +160,8 @@ export class AuthService {
   }
 
   logout() {
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('token');
     window.location.href = '/login';
   }
 
@@ -173,6 +180,6 @@ export class AuthService {
   }
 
   isLoggedIn(): boolean {
-    return !!localStorage.getItem('user');
+    return !!sessionStorage.getItem('user');
   }
 }

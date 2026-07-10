@@ -3,7 +3,10 @@ package be.ephec.pdw.padel.controllers;
 import be.ephec.pdw.padel.dto.LoginDTO;
 import be.ephec.pdw.padel.dto.RegisterDTO;
 import be.ephec.pdw.padel.dto.SessionDTO;
+import be.ephec.pdw.padel.model.Membre;
+import be.ephec.pdw.padel.security.JwtService;
 import be.ephec.pdw.padel.service.AuthService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,11 +18,12 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
+    private final JwtService jwtService;
 
-    // TODO [IMPORTANT][SECURITE] Mettre en place Spring Security avec JWT et prevoir un rate limiting sur la connexion.
     @PostMapping("/login")
-    public SessionDTO login(@RequestBody LoginDTO input) {
-        return SessionDTO.from(authService.login(input));
+    public SessionDTO login(@Valid @RequestBody LoginDTO input) {
+        Membre membre = authService.login(input);
+        return SessionDTO.from(membre, jwtService.generateToken(membre));
     }
 
     @GetMapping("/admin-password-status/{matricule}")
@@ -28,8 +32,8 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    // TODO [IMPORTANT][SECURITE] Valider RegisterDTO avec @Valid, @NotBlank et @Email avant l'appel au service.
-    public SessionDTO register(@RequestBody RegisterDTO input) {
-        return SessionDTO.from(authService.register(input));
+    public SessionDTO register(@Valid @RequestBody RegisterDTO input) {
+        Membre membre = authService.register(input);
+        return SessionDTO.from(membre, jwtService.generateToken(membre));
     }
 }

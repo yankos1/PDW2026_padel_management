@@ -1,4 +1,4 @@
-package be.ephec.pdw.padel.configuration;
+package be.ephec.pdw.padel.constants;
 
 public final class BusinessConstants {
     public static final int MATCH_TOTAL_PRICE = 60;

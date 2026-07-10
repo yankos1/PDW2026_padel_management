@@ -1,6 +1,5 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { AuthService } from './auth.service';
 import { Site } from '../models/site';
 
 @Injectable({
@@ -9,45 +8,33 @@ import { Site } from '../models/site';
 export class AdminService {
   private api = '/api/admin';
 
-  constructor(
-    private http: HttpClient,
-    private authService: AuthService,
-  ) {}
+  constructor(private http: HttpClient) {}
 
   getMatchs() {
-    return this.http.get<number>(`${this.api}/matchs`, this.adminOptions());
+    return this.http.get<number>(`${this.api}/matchs`);
   }
 
   getCA() {
-    return this.http.get<number>(`${this.api}/ca`, this.adminOptions());
+    return this.http.get<number>(`${this.api}/ca`);
   }
 
   getMembres() {
-    return this.http.get<number>(`${this.api}/membres`, this.adminOptions());
+    return this.http.get<number>(`${this.api}/membres`);
   }
 
   getTerrains() {
-    return this.http.get<number>(`${this.api}/terrains`, this.adminOptions());
+    return this.http.get<number>(`${this.api}/terrains`);
   }
 
   getTauxRemplissage() {
-    return this.http.get<number>(`${this.api}/taux-remplissage`, this.adminOptions());
+    return this.http.get<number>(`${this.api}/taux-remplissage`);
   }
 
   getRevenusParSite() {
-    return this.http.get<Record<string, number>>(`${this.api}/revenus-par-site`, this.adminOptions());
+    return this.http.get<Record<string, number>>(`${this.api}/revenus-par-site`);
   }
 
   getSites() {
-    return this.http.get<Site[]>(`${this.api}/sites`, this.adminOptions());
-  }
-
-  private adminOptions() {
-    const matricule = this.authService.getMatricule() ?? '';
-    return {
-      headers: new HttpHeaders({
-        'X-User-Matricule': matricule,
-      }),
-    };
+    return this.http.get<Site[]>(`${this.api}/sites`);
   }
 }

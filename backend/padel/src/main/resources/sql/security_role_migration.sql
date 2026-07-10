@@ -1,0 +1,6 @@
+UPDATE membre
+SET role = 'USER'
+WHERE role IS NULL OR role = '';
+
+ALTER TABLE membre
+    MODIFY COLUMN role ENUM('ADMIN_GLOBAL', 'ADMIN_SITE', 'USER') NOT NULL;

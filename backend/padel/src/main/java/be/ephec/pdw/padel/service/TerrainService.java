@@ -1,7 +1,7 @@
 package be.ephec.pdw.padel.service;
 
-import be.ephec.pdw.padel.configuration.BusinessRuleException;
-import be.ephec.pdw.padel.configuration.BusinessConstants;
+import be.ephec.pdw.padel.constants.BusinessConstants;
+import be.ephec.pdw.padel.exception.BusinessRuleException;
 import be.ephec.pdw.padel.dto.TerrainDTO;
 import be.ephec.pdw.padel.model.Site;
 import be.ephec.pdw.padel.model.Terrain;

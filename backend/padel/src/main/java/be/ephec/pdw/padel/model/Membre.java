@@ -2,6 +2,7 @@ package be.ephec.pdw.padel.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -24,6 +25,8 @@ public abstract class Membre {
     private LocalDateTime finPenalite;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @NotNull
     private Role role;
 
     @JsonIgnore

@@ -13,4 +13,5 @@ export interface Membre {
   finPenalite? : string;
   soldeDu : number;
   site? : Site;
+  token?: string;
 }

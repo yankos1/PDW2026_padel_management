@@ -1,5 +1,6 @@
 package be.ephec.pdw.padel.controllers;
 
+import be.ephec.pdw.padel.service.CurrentUserService;
 import be.ephec.pdw.padel.dto.JoueurDTO;
 import be.ephec.pdw.padel.dto.MatchDTO;
 import be.ephec.pdw.padel.dto.MatchReponseDTO;
@@ -10,7 +11,9 @@ import be.ephec.pdw.padel.repositories.SiteRepository;
 import be.ephec.pdw.padel.repositories.TerrainRepository;
 import be.ephec.pdw.padel.service.MatchService;
 import be.ephec.pdw.padel.service.TerrainService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -25,13 +28,14 @@ public class MatchController {
     private final TerrainService terrainService;
     private final TerrainRepository terrainRepository;
     private final SiteRepository siteRepository;
+    private final CurrentUserService currentUserService;
 
-    // TODO [IMPORTANT][SECURITE] Recuperer l'organisateur depuis l'utilisateur authentifie au lieu de lire organisateur_matricule dans le DTO.
     @PostMapping
-    public MatchReponseDTO createMatch(@RequestBody MatchDTO.PostInput input) {
-        //return matchService.creerMatch(input.getOrganisateur_matricule(), input.getTerrainID(),input.getDate(),input.isEstPublic());
+    @PreAuthorize("isAuthenticated()")
+    public MatchReponseDTO createMatch(@Valid @RequestBody MatchDTO.PostInput input) {
+
         Match match = matchService.creerMatch(
-                input.getOrganisateur_matricule(),
+                currentUserService.getCurrentUser().getMatricule(),
                 input.getTerrainID(),
                 input.getDate(),
                 input.isEstPublic()
@@ -56,6 +60,7 @@ public class MatchController {
     }
 
     @GetMapping("/{id}/joueurs")
+    @PreAuthorize("isAuthenticated()")
     public List<JoueurDTO> joueursInscrits(@PathVariable Long id) {
         return matchService.joueursInscritMatch(id);
     }

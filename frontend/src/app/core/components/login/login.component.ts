@@ -65,7 +65,7 @@ export class LoginComponent {
         this.router.navigate(['/home']);
       },
       error: (err) => {
-        const message = typeof err.error === 'string' ? err.error : 'Connexion impossible';
+        const message = this.errorMessage(err, 'Connexion impossible');
         if (message === 'Mot de passe admin requis' || message === 'Creation du mot de passe admin requise') {
           this.adminPasswordRequired = true;
           this.checkAdminPasswordStatus();
@@ -160,8 +160,16 @@ export class LoginComponent {
       },
       error: (err) => {
         this.registerLoading = false;
-        this.error = typeof err.error === 'string' ? err.error : 'Creation du compte impossible';
+        this.error = this.errorMessage(err, 'Creation du compte impossible');
       },
     });
+  }
+
+  private errorMessage(err: any, fallback: string): string {
+    if (typeof err.error === 'string') {
+      return err.error;
+    }
+
+    return err.error?.message || fallback;
   }
 }

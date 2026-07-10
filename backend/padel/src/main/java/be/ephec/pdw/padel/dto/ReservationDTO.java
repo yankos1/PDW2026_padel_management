@@ -1,18 +1,22 @@
 package be.ephec.pdw.padel.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 public class ReservationDTO {
     @Data
     public static class PostInput {
-        String matricule;
+        @NotNull
         Long matchId;
     }
 
     @Data
     public static class AjoutJoueurPriveInput {
-        String organisateurMatricule;
+        @NotBlank
         String joueurMatricule;
+
+        @NotNull
         Long matchId;
     }
 }

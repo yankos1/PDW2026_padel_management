@@ -1,4 +1,4 @@
-package be.ephec.pdw.padel.configuration;
+package be.ephec.pdw.padel.seed;
 
 import be.ephec.pdw.padel.model.JourFermeture;
 import be.ephec.pdw.padel.model.Match;

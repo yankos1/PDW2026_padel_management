@@ -13,6 +13,7 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { ReservationService } from '../../services/reservation.service';
 import { AuthService } from '../../services/auth.service';
+import { catchError, forkJoin, of } from 'rxjs';
 
 @Component({
   selector: 'app-match-list',
@@ -52,19 +53,22 @@ export class MatchListComponent implements OnInit {
     }
 
     this.error.set(null);
-    this.matchService.getMatchDisponibles().subscribe({
-      next: (matchs) => {
-        this.reservationService.getMesReservations(matricule).subscribe({
-          next: (reservations) => {
-            const matchReserveId = reservations.map((r: any) => r.match.id);
-            const matchFiltre = matchs.filter(
-              (m: any) => !matchReserveId.includes(m.id) && !this.matchDejaPasse(m),
-            );
+    forkJoin({
+      matchs: this.matchService.getMatchDisponibles(),
+      reservations: this.reservationService.getMesReservations(matricule).pipe(
+        catchError(() => {
+          this.error.set('Impossible de charger vos reservations.');
+          return of([]);
+        }),
+      ),
+    }).subscribe({
+      next: ({ matchs, reservations }) => {
+        const matchReserveId = reservations.map((r: any) => r.match.id);
+        const matchFiltre = matchs.filter(
+          (m: any) => !matchReserveId.includes(m.id) && !this.matchDejaPasse(m),
+        );
 
-            this.matchs.set(matchFiltre);
-          },
-          error: () => this.error.set('Impossible de charger vos reservations.'),
-        });
+        this.matchs.set(matchFiltre);
       },
       error: () => {
         this.matchs.set([]);

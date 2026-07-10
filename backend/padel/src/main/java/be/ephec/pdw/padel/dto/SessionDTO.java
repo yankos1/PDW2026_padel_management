@@ -18,9 +18,14 @@ public record SessionDTO(
         boolean penaliteActive,
         LocalDateTime finPenalite,
         double soldeDu,
-        SiteDTO site
+        SiteDTO site,
+        String token
 ) {
     public static SessionDTO from(Membre membre) {
+        return from(membre, null);
+    }
+
+    public static SessionDTO from(Membre membre, String token) {
         return new SessionDTO(
                 membre.getMatricule(),
                 membre.getNom(),
@@ -31,7 +36,8 @@ public record SessionDTO(
                 membre.isPenaliteActive(),
                 membre.getFinPenalite(),
                 membre.getSoldeDu(),
-                site(membre)
+                site(membre),
+                token
         );
     }
 
