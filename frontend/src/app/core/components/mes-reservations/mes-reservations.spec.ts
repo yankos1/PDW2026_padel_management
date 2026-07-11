@@ -42,14 +42,15 @@ describe('MesReservations', () => {
     expect(component.reservations().length).toBe(1);
   });
 
-  it('prevents double payment submissions and shows success', () => {
+  it('prevents double payment submissions and shows success notification', () => {
     const payment$ = new Subject<object>();
+    const notificationService = notificationMock();
     const reservationService = {
       getMesReservations: vi.fn().mockReturnValue(of([])),
       payerReservation: vi.fn().mockReturnValue(payment$),
       ajouterJoueurMatchPrive: vi.fn(),
     };
-    const component = createComponent({ reservationService });
+    const component = createComponent({ reservationService, notificationService });
 
     component.payerReservation(3);
     component.payerReservation(3);
@@ -61,11 +62,13 @@ describe('MesReservations', () => {
     payment$.complete();
 
     expect(component.payingReservationId()).toBeNull();
-    expect(component.success()).toBe('Le paiement a été enregistré.');
+    expect(notificationService.success).toHaveBeenCalledWith('Paiement enregistré avec succès.');
   });
 
   it('shows backend error after payment failure', () => {
+    const notificationService = notificationMock();
     const component = createComponent({
+      notificationService,
       reservationService: {
         getMesReservations: vi.fn().mockReturnValue(of([])),
         payerReservation: vi.fn().mockReturnValue(throwError(() => ({
@@ -83,11 +86,61 @@ describe('MesReservations', () => {
     component.payerReservation(3);
 
     expect(component.payingReservationId()).toBeNull();
-    expect(component.error()).toBe('Vous ne pouvez pas payer cette réservation');
+    expect(notificationService.error).toHaveBeenCalledWith('Vous ne pouvez pas payer cette réservation');
+  });
+
+  it('filters reservations case-insensitively and trims spaces', () => {
+    const component = createComponent();
+    component.reservations.set([
+      reservationFixture({ id: 1, site: 'Bruxelles', terrain: 'Central', estPayee: true }),
+      reservationFixture({ id: 2, site: 'Namur', terrain: 'Court 2', estPayee: false }),
+    ]);
+
+    component.searchTerm = '  NAM ';
+
+    expect(component.filteredReservations().map((reservation) => reservation.id)).toEqual([2]);
+  });
+
+  it('resets reservation filters', () => {
+    const component = createComponent();
+    component.searchTerm = 'bruxelles';
+    component.paiementFilter = 'PAYEE';
+    component.statutFilter = 'À venir';
+
+    component.resetFilters();
+
+    expect(component.searchTerm).toBe('');
+    expect(component.paiementFilter).toBe('');
+    expect(component.statutFilter).toBe('');
+  });
+
+  it('does not pay when confirmation is cancelled', () => {
+    const dialog = dialogMock(false);
+    const component = createComponent({ dialog });
+    const payer = vi.spyOn(component, 'payerReservation');
+
+    component.confirmerPaiement(reservationFixture({ id: 3 }));
+
+    expect(payer).not.toHaveBeenCalled();
+  });
+
+  it('pays after confirmation', () => {
+    const dialog = dialogMock(true);
+    const component = createComponent({ dialog });
+    const payer = vi.spyOn(component, 'payerReservation');
+
+    component.confirmerPaiement(reservationFixture({ id: 3 }));
+
+    expect(payer).toHaveBeenCalledWith(3);
   });
 });
 
-function createComponent(overrides: { reservationService?: any; authService?: any } = {}) {
+function createComponent(overrides: {
+  reservationService?: any;
+  authService?: any;
+  notificationService?: any;
+  dialog?: any;
+} = {}) {
   const reservationService = {
     getMesReservations: vi.fn().mockReturnValue(of([])),
     payerReservation: vi.fn().mockReturnValue(of({})),
@@ -99,9 +152,48 @@ function createComponent(overrides: { reservationService?: any; authService?: an
     ...overrides.authService,
   };
 
-  return new MesReservations(reservationService as any, authService as any);
+  return new MesReservations(
+    reservationService as any,
+    authService as any,
+    (overrides.notificationService ?? notificationMock()) as any,
+    (overrides.dialog ?? dialogMock(false)) as any,
+  );
 }
 
 function futureDate(): string {
   return new Date(Date.now() + 60_000).toISOString();
+}
+
+function notificationMock() {
+  return {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  };
+}
+
+function dialogMock(confirmed: boolean) {
+  return {
+    open: vi.fn().mockReturnValue({
+      afterClosed: () => of(confirmed),
+    }),
+  };
+}
+
+function reservationFixture(overrides: any = {}) {
+  return {
+    id: overrides.id ?? 1,
+    estPayee: overrides.estPayee ?? false,
+    statut: overrides.statut ?? 'CONFIRMEE',
+    match: {
+      id: overrides.matchId ?? 10,
+      site: overrides.site ?? 'Bruxelles',
+      terrain: overrides.terrain ?? 'Central',
+      dateHeureDebut: overrides.dateHeureDebut ?? futureDate(),
+      statut: overrides.matchStatut ?? 'PLANIFIE',
+      estPublic: overrides.estPublic ?? true,
+      nbParticipants: overrides.nbParticipants ?? 2,
+    },
+  };
 }

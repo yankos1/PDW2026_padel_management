@@ -5,14 +5,16 @@ import { LoginComponent } from './login.component';
 
 describe('LoginComponent', () => {
   it('shows backend invalid credentials message', () => {
+    const notificationService = notificationMock();
     const component = createComponent({
       login: vi.fn().mockReturnValue(throwError(() => backendError(401, 'Identifiants invalides'))),
-    });
+    }, notificationService);
 
     component.matricule = 'G9999';
     component.login();
 
     expect(component.error).toBe('Identifiants invalides');
+    expect(notificationService.error).toHaveBeenCalledWith('Identifiants invalides');
   });
 
   it('disables login while the request is pending and prevents double submit', () => {
@@ -31,18 +33,18 @@ describe('LoginComponent', () => {
     login$.complete();
 
     expect(component.loginLoading).toBe(false);
-    expect(component.success).toBe('Connexion réussie.');
   });
 
-  it('shows success after registration and clears loading', () => {
+  it('shows success notification after registration and clears loading', () => {
+    const notificationService = notificationMock();
     const register = vi.fn().mockReturnValue(of({ matricule: 'G1234' }));
-    const component = createComponent({ register });
+    const component = createComponent({ register }, notificationService);
 
     component.registerForm = { prenom: 'Ada', nom: 'Lovelace', email: 'ada@example.test' };
     component.register();
 
     expect(component.registerLoading).toBe(false);
-    expect(component.success).toContain('Compte créé');
+    expect(notificationService.success).toHaveBeenCalledWith('Compte créé avec succès. Votre matricule est G1234.');
     expect(component.matricule).toBe('G1234');
   });
 
@@ -66,7 +68,7 @@ describe('LoginComponent', () => {
   });
 });
 
-function createComponent(authOverrides: Record<string, any> = {}) {
+function createComponent(authOverrides: Record<string, any> = {}, notificationService = notificationMock()) {
   const authService = {
     login: vi.fn().mockReturnValue(of({ matricule: 'G0001' })),
     register: vi.fn().mockReturnValue(of({ matricule: 'G1234' })),
@@ -76,7 +78,7 @@ function createComponent(authOverrides: Record<string, any> = {}) {
   };
   const router = { navigate: vi.fn() };
 
-  return new LoginComponent(authService as any, router as any);
+  return new LoginComponent(authService as any, router as any, notificationService as any);
 }
 
 function backendError(status: number, message: string): HttpErrorResponse {
@@ -89,4 +91,13 @@ function backendError(status: number, message: string): HttpErrorResponse {
       fieldErrors: {},
     },
   });
+}
+
+function notificationMock() {
+  return {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  };
 }

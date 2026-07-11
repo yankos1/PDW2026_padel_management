@@ -36,7 +36,7 @@
             <span class="field-error">{{ statErrors.ca }}</span>
             <button mat-button type="button" (click)="retryStat('ca')">Réessayer</button>
           } @else if (ca !== null) {
-            <strong>{{ ca | number:'1.0-2' }} EUR</strong>
+            <strong>{{ formatMontant(ca) }}</strong>
           } @else {
             <span>Aucune donnée disponible.</span>
           }
@@ -112,7 +112,32 @@
       <p class="ux-state">Aucun site disponible pour les statistiques.</p>
     }
 
-    @for (site of sites; track site.id) {
+    @if (!loadingSites && !sitesError && sites.length > 0) {
+      <div class="filters-panel" aria-label="Filtre des sites">
+        <mat-form-field appearance="outline">
+          <mat-label>Rechercher un site</mat-label>
+          <input
+            matInput
+            type="search"
+            name="siteSearch"
+            [(ngModel)]="siteSearchTerm"
+            placeholder="Nom du site"
+          >
+        </mat-form-field>
+      </div>
+
+      @if (hasSiteSearch()) {
+        <div class="filter-actions">
+          <button mat-button type="button" (click)="resetSiteSearch()">Réinitialiser les filtres</button>
+        </div>
+      }
+    }
+
+    @if (!loadingSites && !sitesError && sites.length > 0 && filteredSites().length === 0) {
+      <p class="ux-state">Aucun résultat ne correspond à votre recherche.</p>
+    }
+
+    @for (site of filteredSites(); track site.id) {
       <mat-card class="match-card">
 
         <mat-card-header>
@@ -128,7 +153,7 @@
             } @else if (revenusError) {
               <span class="field-error">Donnée indisponible</span>
             } @else if (revenus !== null && revenus[site.name] !== undefined) {
-              <strong>{{ revenus[site.name] | number:'1.0-2' }} EUR</strong>
+              <strong>{{ formatMontant(revenus[site.name]) }}</strong>
             } @else {
               <span>Aucune donnée disponible pour cette période.</span>
             }

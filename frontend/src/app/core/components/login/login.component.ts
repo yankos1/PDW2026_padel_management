@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+﻿import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
@@ -10,6 +10,7 @@ import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { getApiErrorMessage, getApiFieldErrors } from '../../utils/api-error.util';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-login',
@@ -30,7 +31,7 @@ export class LoginComponent {
   matricule = '';
   password = '';
   error = '';
-  success = '';
+
   loginLoading = false;
   adminPasswordRequired = false;
   adminPasswordCreation = false;
@@ -48,6 +49,7 @@ export class LoginComponent {
   constructor(
     private authService: AuthService,
     private router: Router,
+    private notificationService: NotificationService,
   ) {}
 
   login() {
@@ -56,10 +58,11 @@ export class LoginComponent {
     }
 
     this.error = '';
-    this.success = '';
+
 
     if (!this.matricule.trim()) {
       this.error = 'Le matricule est obligatoire.';
+      this.notificationService.warning(this.error);
       return;
     }
 
@@ -67,6 +70,7 @@ export class LoginComponent {
       this.error = this.adminPasswordCreation
         ? 'Choisissez un mot de passe admin'
         : 'Mot de passe admin requis';
+      this.notificationService.warning(this.error);
       return;
     }
 
@@ -78,7 +82,7 @@ export class LoginComponent {
       .subscribe({
       next: (user) => {
         this.authService.setUser(user);
-        this.success = 'Connexion réussie.';
+        this.notificationService.success('Connexion réussie.');
         this.router.navigate(['/home']);
       },
       error: (err) => {
@@ -90,6 +94,7 @@ export class LoginComponent {
         }
 
         this.error = message;
+        this.notificationService.error(message);
       },
     });
   }
@@ -103,7 +108,7 @@ export class LoginComponent {
     this.adminPasswordCreation = false;
     this.password = '';
     this.error = '';
-    this.success = '';
+
 
     const matricule = this.matricule.trim();
 
@@ -136,7 +141,7 @@ export class LoginComponent {
   toggleRegisterForm() {
     this.showRegisterForm = !this.showRegisterForm;
     this.error = '';
-    this.success = '';
+
     this.registerFieldErrors = {};
     this.registerSubmitted = false;
   }
@@ -147,7 +152,7 @@ export class LoginComponent {
     }
 
     this.error = '';
-    this.success = '';
+
     this.registerFieldErrors = {};
     this.registerSubmitted = true;
 
@@ -159,6 +164,7 @@ export class LoginComponent {
 
     if (!input.prenom || !input.nom || !input.email) {
       this.error = 'Complétez tous les champs pour créer votre compte.';
+      this.notificationService.warning(this.error);
       return;
     }
 
@@ -178,11 +184,12 @@ export class LoginComponent {
           email: '',
         };
         this.showRegisterForm = false;
-        this.success = `Compte créé ! Votre matricule est ${user.matricule}, vous pouvez vous connecter.`;
+        this.notificationService.success(`Compte créé avec succès. Votre matricule est ${user.matricule}.`);
       },
       error: (err) => {
         this.registerFieldErrors = getApiFieldErrors(err);
         this.error = this.errorMessage(err, 'Création du compte impossible');
+        this.notificationService.error(this.error);
       },
     });
   }

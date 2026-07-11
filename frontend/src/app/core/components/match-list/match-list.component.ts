@@ -1,7 +1,7 @@
-import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatchService } from '../../services/match.service';
-import { MatDivider } from '@angular/material/list';
+import { Component, OnInit, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
 import {
   MatCard,
   MatCardActions,
@@ -10,17 +10,25 @@ import {
   MatCardSubtitle,
   MatCardTitle,
 } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { ReservationService } from '../../services/reservation.service';
-import { AuthService } from '../../services/auth.service';
+import { MatDialog } from '@angular/material/dialog';
+import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
+import { MatDivider } from '@angular/material/list';
+import { MatOption, MatSelect } from '@angular/material/select';
 import { finalize, forkJoin, switchMap } from 'rxjs';
+import { AuthService } from '../../services/auth.service';
+import { MatchService } from '../../services/match.service';
+import { NotificationService } from '../../services/notification.service';
+import { ReservationService } from '../../services/reservation.service';
 import { getApiErrorMessage } from '../../utils/api-error.util';
+import { ConfirmationDialogComponent } from '../confirmation-dialog/confirmation-dialog.component';
 
 @Component({
   selector: 'app-match-list',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     MatCard,
     MatCardHeader,
     MatCardTitle,
@@ -29,6 +37,11 @@ import { getApiErrorMessage } from '../../utils/api-error.util';
     MatCardActions,
     MatDivider,
     MatButtonModule,
+    MatFormField,
+    MatLabel,
+    MatInput,
+    MatSelect,
+    MatOption,
   ],
   templateUrl: './match-list.component.html',
   styleUrls: ['./match-list.component.css'],
@@ -37,14 +50,18 @@ export class MatchListComponent implements OnInit {
   // TODO [IMPORTANT] Remplacer any par des interfaces TypeScript alignees sur les DTO backend.
   matchs = signal<any[]>([]);
   error = signal<string | null>(null);
-  success = signal<string | null>(null);
   loading = signal(false);
   joiningMatchId = signal<number | null>(null);
+  searchTerm = '';
+  statutFilter = '';
+  typeFilter = '';
 
   constructor(
     private matchService: MatchService,
     private reservationService: ReservationService,
     private authService: AuthService,
+    private notificationService: NotificationService,
+    private dialog: MatDialog,
   ) {}
 
   ngOnInit() {
@@ -55,7 +72,9 @@ export class MatchListComponent implements OnInit {
     const matricule = this.authService.getMatricule();
 
     if (!matricule) {
-      this.error.set('Vous devez être connecté pour consulter les matchs.');
+      const message = 'Vous devez être connecté pour consulter les matchs.';
+      this.error.set(message);
+      this.notificationService.warning(message);
       return;
     }
 
@@ -74,7 +93,9 @@ export class MatchListComponent implements OnInit {
         this.matchs.set(matchFiltre);
       },
       error: (err) => {
-        this.error.set(getApiErrorMessage(err, 'Impossible de charger les matchs publics disponibles.'));
+        const message = getApiErrorMessage(err, 'Impossible de charger les matchs publics disponibles.');
+        this.error.set(message);
+        this.notificationService.error(message);
       },
     });
   }
@@ -83,12 +104,12 @@ export class MatchListComponent implements OnInit {
     const matricule = this.authService.getMatricule();
 
     if (!matricule) {
-      this.error.set('Vous devez être connecté pour réserver.');
+      this.notificationService.warning('Vous devez être connecté pour réserver.');
       return;
     }
 
     if (!this.peutReserver(match)) {
-      this.error.set(this.raisonBlocageReservation(match));
+      this.notificationService.warning(this.raisonBlocageReservation(match) ?? 'Réservation impossible.');
       return;
     }
 
@@ -97,7 +118,6 @@ export class MatchListComponent implements OnInit {
     }
 
     this.error.set(null);
-    this.success.set(null);
     this.joiningMatchId.set(match.id);
 
     this.reservationService
@@ -108,11 +128,11 @@ export class MatchListComponent implements OnInit {
       .pipe(finalize(() => this.joiningMatchId.set(null)))
       .subscribe({
         next: () => {
-          this.success.set('Réservation en attente de paiement.');
+          this.notificationService.success('Réservation en attente de paiement.');
           this.loadMatchs();
         },
         error: (err) => {
-          this.error.set(getApiErrorMessage(err, 'Réservation impossible'));
+          this.notificationService.error(getApiErrorMessage(err, 'Réservation impossible.'));
         },
       });
   }
@@ -120,12 +140,12 @@ export class MatchListComponent implements OnInit {
   payerMatchPublic(match: any) {
     const matricule = this.authService.getMatricule();
     if (!matricule) {
-      this.error.set('Vous devez être connecté pour réserver.');
+      this.notificationService.warning('Vous devez être connecté pour réserver.');
       return;
     }
 
     if (!this.peutReserver(match)) {
-      this.error.set(this.raisonBlocageReservation(match));
+      this.notificationService.warning(this.raisonBlocageReservation(match) ?? 'Paiement impossible.');
       return;
     }
 
@@ -134,7 +154,6 @@ export class MatchListComponent implements OnInit {
     }
 
     this.error.set(null);
-    this.success.set(null);
     this.joiningMatchId.set(match.id);
 
     this.reservationService.rejoindreMatch({ matricule: matricule, matchId: match.id }).pipe(
@@ -142,11 +161,11 @@ export class MatchListComponent implements OnInit {
       finalize(() => this.joiningMatchId.set(null)),
     ).subscribe({
       next: () => {
-        this.success.set('Le paiement a été enregistré.');
+        this.notificationService.success('Paiement enregistré avec succès.');
         this.loadMatchs();
       },
       error: (err) => {
-        this.error.set(getApiErrorMessage(err, 'Paiement impossible'));
+        this.notificationService.error(getApiErrorMessage(err, 'Paiement impossible.'));
         this.loadMatchs();
       },
     });
@@ -154,15 +173,21 @@ export class MatchListComponent implements OnInit {
 
   ouvrirPaiement(match: any) {
     if (!this.peutReserver(match)) {
-      this.error.set(this.raisonBlocageReservation(match));
+      this.notificationService.warning(this.raisonBlocageReservation(match) ?? 'Paiement impossible.');
       return;
     }
 
-    const confirm = window.confirm('Paiement de 15 euros requis pour confirmer la place. Continuer ?');
-
-    if (confirm) {
-      this.payerMatchPublic(match);
-    }
+    this.dialog.open(ConfirmationDialogComponent, {
+      data: {
+        title: 'Confirmer le paiement',
+        message: `Confirmer le paiement de ${this.formatMontant(15)} pour cette réservation ?`,
+      },
+      width: '420px',
+    }).afterClosed().subscribe((confirmed) => {
+      if (confirmed) {
+        this.payerMatchPublic(match);
+      }
+    });
   }
 
   peutReserver(match: any): boolean {
@@ -192,6 +217,96 @@ export class MatchListComponent implements OnInit {
     }
 
     return null;
+  }
+
+  filteredMatchs(): any[] {
+    const search = this.normalize(this.searchTerm);
+
+    return this.matchs().filter((match) => {
+      const statusMatches = !this.statutFilter || match.statut === this.statutFilter;
+      const typeMatches = this.typeFilter === ''
+        || (this.typeFilter === 'PUBLIC' && match.estPublic !== false)
+        || (this.typeFilter === 'PRIVE' && match.estPublic === false);
+
+      if (!statusMatches || !typeMatches) {
+        return false;
+      }
+
+      return !search || this.searchableMatchText(match).includes(search);
+    });
+  }
+
+  hasActiveFilters(): boolean {
+    return Boolean(this.searchTerm.trim() || this.statutFilter || this.typeFilter);
+  }
+
+  resetFilters() {
+    this.searchTerm = '';
+    this.statutFilter = '';
+    this.typeFilter = '';
+  }
+
+  statusOptions(): string[] {
+    return Array.from(new Set(this.matchs().map((match) => match.statut).filter(Boolean))).sort();
+  }
+
+  libelleStatut(statut: string | null | undefined): string {
+    const labels: Record<string, string> = {
+      PLANIFIE: 'Planifié',
+      TERMINE: 'Terminé',
+      ANNULE: 'Annulé',
+      COMPLET: 'Complet',
+    };
+
+    return statut ? labels[statut] ?? statut : 'Non renseigné';
+  }
+
+  statutClass(statut: string | null | undefined): string {
+    if (statut === 'PLANIFIE') return 'info';
+    if (statut === 'COMPLET') return 'warning';
+    if (statut === 'ANNULE') return 'error';
+    if (statut === 'TERMINE') return 'success';
+    return '';
+  }
+
+  libelleTypeMatch(match: any): string {
+    return match.estPublic === false ? 'Privé' : 'Public';
+  }
+
+  formatDate(value: string): string {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value || 'Non renseignée';
+    return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+  }
+
+  formatTime(value: string): string {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(date);
+  }
+
+  formatMontant(value: number): string {
+    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value);
+  }
+
+  private searchableMatchText(match: any): string {
+    return this.normalize([
+      match.site,
+      match.terrain,
+      match.terrainNom,
+      this.formatDate(match.dateHeureDebut),
+      this.formatTime(match.dateHeureDebut),
+      match.organisateur,
+      match.organisateurMatricule,
+      match.matricule,
+      this.libelleStatut(match.statut),
+      match.statut,
+      this.libelleTypeMatch(match),
+    ].filter(Boolean).join(' '));
+  }
+
+  private normalize(value: string): string {
+    return value.trim().toLocaleLowerCase('fr-FR');
   }
 
   private matchDejaPasse(match: any): boolean {

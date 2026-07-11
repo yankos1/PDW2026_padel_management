@@ -62,14 +62,15 @@ describe('MatchListComponent', () => {
     expect(component.error()).toBeNull();
   });
 
-  it('prevents double reservation submissions and shows success', () => {
+  it('prevents double reservation submissions and shows success notification', () => {
     const join$ = new Subject<any>();
+    const notificationService = notificationMock();
     const reservationService = {
       getMesReservations: vi.fn().mockReturnValue(of([])),
       rejoindreMatch: vi.fn().mockReturnValue(join$),
       payerReservation: vi.fn(),
     };
-    const component = createComponent({ reservationService });
+    const component = createComponent({ reservationService, notificationService });
     const match = { id: 7, dateHeureDebut: futureDate(), siteId: 1 };
 
     component.rejoindreMatch(match);
@@ -82,7 +83,52 @@ describe('MatchListComponent', () => {
     join$.complete();
 
     expect(component.joiningMatchId()).toBeNull();
-    expect(component.success()).toBe('Réservation en attente de paiement.');
+    expect(notificationService.success).toHaveBeenCalledWith('Réservation en attente de paiement.');
+  });
+
+  it('filters matches case-insensitively and trims spaces', () => {
+    const component = createComponent();
+    component.matchs.set([
+      { id: 1, site: 'Bruxelles', terrain: 'Central', dateHeureDebut: futureDate(), statut: 'PLANIFIE', estPublic: true },
+      { id: 2, site: 'Namur', terrain: 'Court 2', dateHeureDebut: futureDate(), statut: 'COMPLET', estPublic: true },
+    ]);
+
+    component.searchTerm = '  brux ';
+
+    expect(component.filteredMatchs().map((match) => match.id)).toEqual([1]);
+  });
+
+  it('resets match filters', () => {
+    const component = createComponent();
+    component.searchTerm = 'namur';
+    component.statutFilter = 'COMPLET';
+    component.typeFilter = 'PUBLIC';
+
+    component.resetFilters();
+
+    expect(component.searchTerm).toBe('');
+    expect(component.statutFilter).toBe('');
+    expect(component.typeFilter).toBe('');
+  });
+
+  it('waits for payment confirmation before triggering the action', () => {
+    const dialog = dialogMock(false);
+    const component = createComponent({ dialog });
+    const payer = vi.spyOn(component, 'payerMatchPublic');
+
+    component.ouvrirPaiement({ id: 7, dateHeureDebut: futureDate(), siteId: 1 });
+
+    expect(payer).not.toHaveBeenCalled();
+  });
+
+  it('starts public payment after confirmation', () => {
+    const dialog = dialogMock(true);
+    const component = createComponent({ dialog });
+    const payer = vi.spyOn(component, 'payerMatchPublic');
+
+    component.ouvrirPaiement({ id: 7, dateHeureDebut: futureDate(), siteId: 1 });
+
+    expect(payer).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -90,6 +136,8 @@ function createComponent(overrides: {
   matchService?: any;
   reservationService?: any;
   authService?: any;
+  notificationService?: any;
+  dialog?: any;
 } = {}) {
   const matchService = {
     getMatchDisponibles: vi.fn().mockReturnValue(of([])),
@@ -110,9 +158,32 @@ function createComponent(overrides: {
     ...overrides.authService,
   };
 
-  return new MatchListComponent(matchService as any, reservationService as any, authService as any);
+  return new MatchListComponent(
+    matchService as any,
+    reservationService as any,
+    authService as any,
+    (overrides.notificationService ?? notificationMock()) as any,
+    (overrides.dialog ?? dialogMock(false)) as any,
+  );
 }
 
 function futureDate(): string {
   return new Date(Date.now() + 60_000).toISOString();
+}
+
+function notificationMock() {
+  return {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
+  };
+}
+
+function dialogMock(confirmed: boolean) {
+  return {
+    open: vi.fn().mockReturnValue({
+      afterClosed: () => of(confirmed),
+    }),
+  };
 }

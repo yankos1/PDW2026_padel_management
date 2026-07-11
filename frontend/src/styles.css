@@ -128,6 +128,87 @@ button[disabled] {
 .retry-button {
   margin-top: 8px;
 }
+
+.filters-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.filters-panel mat-form-field {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.status-badge {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  color: #334155;
+  display: inline-flex;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 7px 9px;
+}
+
+.status-badge.success {
+  color: #166534;
+  background: #dcfce7;
+  border-color: #bbf7d0;
+}
+
+.status-badge.warning {
+  color: #92400e;
+  background: #fef3c7;
+  border-color: #fde68a;
+}
+
+.status-badge.error {
+  color: #991b1b;
+  background: #fee2e2;
+  border-color: #fecaca;
+}
+
+.status-badge.info {
+  color: #1e40af;
+  background: #dbeafe;
+  border-color: #bfdbfe;
+}
+
+.app-snackbar-success .mdc-snackbar__surface {
+  background: #166534;
+}
+
+.app-snackbar-error .mdc-snackbar__surface {
+  background: #991b1b;
+}
+
+.app-snackbar-warning .mdc-snackbar__surface {
+  background: #92400e;
+}
+
+.app-snackbar-info .mdc-snackbar__surface {
+  background: #1e40af;
+}
+
+.app-snackbar .mdc-snackbar__label,
+.app-snackbar .mat-mdc-button {
+  color: #fff;
+}
+
+.app-snackbar .mdc-snackbar__surface {
+  max-width: min(560px, calc(100vw - 24px));
+}
 .title {
   text-align: center;
   margin-top: 20px;
@@ -163,6 +244,15 @@ button[disabled] {
 
   mat-card-actions button,
   mat-card-actions a {
+    width: 100%;
+  }
+
+  .filters-panel {
+    flex-direction: column;
+  }
+
+  .filters-panel mat-form-field,
+  .filter-actions button {
     width: 100%;
   }
 

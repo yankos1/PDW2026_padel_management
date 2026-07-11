@@ -9,40 +9,88 @@
   </p>
 }
 
-@if (success()) {
-  <p class="ux-alert success" aria-live="polite">{{ success() }}</p>
-}
-
 @if (loading()) {
   <p class="ux-state" aria-live="polite">Chargement des matchs publics...</p>
 }
 
 <div class="match-container" [attr.aria-busy]="loading()">
-  @if (!loading() && !error() && matchs().length === 0) {
-    <p class="ux-state">Aucun match public disponible pour le moment.</p>
+  @if (!loading() && !error() && matchs().length > 0) {
+    <div class="filters-panel" aria-label="Filtres des matchs publics">
+      <mat-form-field appearance="outline">
+        <mat-label>Rechercher un match</mat-label>
+        <input
+          matInput
+          type="search"
+          name="matchSearch"
+          [(ngModel)]="searchTerm"
+          placeholder="Site, terrain, date, statut..."
+        >
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Statut</mat-label>
+        <mat-select [(ngModel)]="statutFilter" name="matchStatusFilter">
+          <mat-option value="">Tous les statuts</mat-option>
+          @for (statut of statusOptions(); track statut) {
+            <mat-option [value]="statut">{{ libelleStatut(statut) }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Type</mat-label>
+        <mat-select [(ngModel)]="typeFilter" name="matchTypeFilter">
+          <mat-option value="">Tous les types</mat-option>
+          <mat-option value="PUBLIC">Public</mat-option>
+          <mat-option value="PRIVE">Privé</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    @if (hasActiveFilters()) {
+      <div class="filter-actions">
+        <button mat-button type="button" (click)="resetFilters()">Réinitialiser les filtres</button>
+      </div>
+    }
   }
 
-  @for (match of matchs(); track match.id) {
+  @if (!loading() && !error() && matchs().length === 0) {
+    <p class="ux-state">Aucun match public n’est disponible actuellement.</p>
+  }
+
+  @if (!loading() && !error() && matchs().length > 0 && filteredMatchs().length === 0) {
+    <p class="ux-state">Aucun résultat ne correspond à votre recherche.</p>
+  }
+
+  @for (match of filteredMatchs(); track match.id) {
     <mat-card class="match-card">
 
       <mat-card-header>
         <mat-card-title>Match #{{ match.id }}</mat-card-title>
         <mat-card-subtitle>
-          {{ match.dateHeureDebut | date:'dd/MM/yyyy HH:mm' }}
+          {{ formatDate(match.dateHeureDebut) }} à {{ formatTime(match.dateHeureDebut) }}
         </mat-card-subtitle>
       </mat-card-header>
 
       <mat-card-content>
         <p>
           Site :
-          <strong>{{ match.site }}</strong>
+          <strong>{{ match.site || 'Non renseigné' }}</strong>
         </p>
         <p>
           Terrain :
-          <strong>{{ match.terrain }}</strong>
+          <strong>{{ match.terrain || match.terrainNom || 'Non renseigné' }}</strong>
         </p>
         <p>
-          Places occupees :
+          Statut :
+          <span class="status-badge" [ngClass]="statutClass(match.statut)">{{ libelleStatut(match.statut) }}</span>
+        </p>
+        <p>
+          Type :
+          <strong>{{ libelleTypeMatch(match) }}</strong>
+        </p>
+        <p>
+          Places occupées :
           <strong>{{ match.nbParticipants }}/4</strong>
         </p>
         @if (!peutReserver(match)) {
@@ -67,5 +115,5 @@
 <mat-divider></mat-divider>
 
 <p class="match-count">
-  Nombre de matchs : <strong>{{ matchs().length }}</strong>
+  Nombre de matchs : <strong>{{ filteredMatchs().length }}</strong>
 </p>

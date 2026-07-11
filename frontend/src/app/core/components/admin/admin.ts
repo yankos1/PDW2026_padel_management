@@ -1,5 +1,6 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { finalize, Observable } from 'rxjs';
 import { AdminService } from '../../services/admin.service';
 import { AuthService } from '../../services/auth.service';
@@ -14,19 +15,25 @@ import {
   MatCardTitle,
 } from '@angular/material/card';
 import { MatButton } from '@angular/material/button';
+import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
 
 type StatKey = 'matchs' | 'ca' | 'membres' | 'terrains' | 'taux';
 
 @Component({
   selector: 'app-admin',
   imports: [
-    DecimalPipe,
     MatCard,
     MatCardHeader,
     MatCardTitle,
     MatCardSubtitle,
     MatCardContent,
     MatButton,
+    DecimalPipe,
+    FormsModule,
+    MatFormField,
+    MatLabel,
+    MatInput,
   ],
   templateUrl: './admin.html',
   styleUrl: './admin.css',
@@ -59,6 +66,7 @@ export class Admin implements OnInit {
   sitesError = '';
   revenusError = '';
   error = '';
+  siteSearchTerm = '';
 
   constructor(
     private adminService: AdminService,
@@ -164,5 +172,27 @@ export class Admin implements OnInit {
         this.loadStat('taux', this.adminService.getTauxRemplissage(), 'Impossible de charger le taux de remplissage.');
         break;
     }
+  }
+
+  filteredSites(): Site[] {
+    const search = this.siteSearchTerm.trim().toLocaleLowerCase('fr-FR');
+
+    if (!search) {
+      return this.sites;
+    }
+
+    return this.sites.filter((site) => site.name.toLocaleLowerCase('fr-FR').includes(search));
+  }
+
+  hasSiteSearch(): boolean {
+    return this.siteSearchTerm.trim().length > 0;
+  }
+
+  resetSiteSearch() {
+    this.siteSearchTerm = '';
+  }
+
+  formatMontant(value: number): string {
+    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value);
   }
 }

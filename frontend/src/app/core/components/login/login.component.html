@@ -41,10 +41,6 @@
           <p class="ux-alert error" aria-live="polite">{{ error }}</p>
         }
 
-        @if (success) {
-          <p class="ux-alert success" aria-live="polite">{{ success }}</p>
-        }
-
         <button class="btn-primary" type="submit" [disabled]="loginLoading">
           {{ loginLoading ? 'Connexion...' : 'Se connecter' }}
         </button>
@@ -58,7 +54,7 @@
       @if (showRegisterForm) {
         <form class="register-form" (ngSubmit)="register()" [attr.aria-busy]="registerLoading">
           <div class="form-field">
-            <label>Prenom</label>
+            <label>Prénom</label>
             <input
               matInput
               name="registerPrenom"
@@ -67,7 +63,7 @@
               required
             />
             @if (registerSubmitted && !registerForm.prenom.trim()) {
-              <p class="field-error">Le prenom est obligatoire.</p>
+              <p class="field-error">Le prénom est obligatoire.</p>
             }
             @if (registerFieldError('prenom')) {
               <p class="field-error">{{ registerFieldError('prenom') }}</p>

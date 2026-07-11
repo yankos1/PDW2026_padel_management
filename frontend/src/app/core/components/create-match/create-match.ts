@@ -11,6 +11,7 @@ import { Site } from '../../models/site';
 import { AuthService } from '../../services/auth.service';
 import { finalize } from 'rxjs';
 import { getApiErrorMessage, getApiFieldErrors } from '../../utils/api-error.util';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-create-match',
@@ -40,7 +41,6 @@ export class CreateMatch implements OnInit {
   siteId: number | null = null;
 
   error = signal<string | null>(null);
-  success = signal<string | null>(null);
   fieldErrors = signal<Record<string, string>>({});
   loadingSites = signal(false);
   loadingSlots = signal(false);
@@ -51,6 +51,7 @@ export class CreateMatch implements OnInit {
     private matchService: MatchService,
     private router: Router,
     private authService: AuthService,
+    private notificationService: NotificationService,
   ) {}
 
   ngOnInit() {
@@ -67,7 +68,11 @@ export class CreateMatch implements OnInit {
       next: (data) => {
         this.sites.set(data);
       },
-      error: (err) => this.error.set(getApiErrorMessage(err, 'Erreur chargement des sites')),
+      error: (err) => {
+        const message = getApiErrorMessage(err, 'Erreur chargement des sites');
+        this.error.set(message);
+        this.notificationService.error(message);
+      },
     });
   }
 
@@ -77,11 +82,11 @@ export class CreateMatch implements OnInit {
     }
 
     this.error.set(null);
-    this.success.set(null);
     this.fieldErrors.set({});
 
     if (!this.date || !this.heureSelected || !this.terrainId) {
       this.error.set('Tous les champs sont obligatoires');
+      this.notificationService.warning('Tous les champs sont obligatoires.');
       return;
     }
 
@@ -89,18 +94,22 @@ export class CreateMatch implements OnInit {
 
     if (!matricule) {
       this.error.set('Vous devez être connecté pour créer un match');
+      this.notificationService.warning('Vous devez être connecté pour créer un match.');
       return;
     }
 
     const dateTime = `${this.date}T${this.heureSelected}:00`;
 
     if (!this.authService.canReserveDate(dateTime)) {
-      this.error.set(this.messageDelaiReservation());
+      const message = this.messageDelaiReservation();
+      this.error.set(message);
+      this.notificationService.warning(message);
       return;
     }
 
     if (!this.siteAutorise(this.siteId)) {
       this.error.set('Un membre du site ne peut réserver que sur son site');
+      this.notificationService.warning('Un membre du site ne peut réserver que sur son site.');
       return;
     }
 
@@ -117,12 +126,14 @@ export class CreateMatch implements OnInit {
       .pipe(finalize(() => this.submitting.set(false)))
       .subscribe({
       next: () => {
-        this.success.set('Le match a été créé.');
+        this.notificationService.success('Match créé avec succès.');
         setTimeout(() => this.router.navigate(['/mes-reservations']), 700);
       },
       error: (err) => {
         this.fieldErrors.set(getApiFieldErrors(err));
-        this.error.set(getApiErrorMessage(err, 'Erreur lors de la création'));
+        const message = getApiErrorMessage(err, 'Erreur lors de la création');
+        this.error.set(message);
+        this.notificationService.error(message);
       },
     });
   }
@@ -205,7 +216,9 @@ export class CreateMatch implements OnInit {
       .subscribe({
       next: (data) => (this.slots = data),
       error: (err) => {
-        this.error.set(getApiErrorMessage(err, 'Erreur chargement terrains'));
+        const message = getApiErrorMessage(err, 'Erreur chargement terrains');
+        this.error.set(message);
+        this.notificationService.error(message);
       },
     });
   }
@@ -228,7 +241,9 @@ export class CreateMatch implements OnInit {
           this.terrains.set(data);
         },
         error: (err) => {
-          this.error.set(getApiErrorMessage(err, 'Erreur chargement terrains'));
+          const message = getApiErrorMessage(err, 'Erreur chargement terrains');
+          this.error.set(message);
+          this.notificationService.error(message);
         },
       });
   }
@@ -240,6 +255,7 @@ export class CreateMatch implements OnInit {
 
     if (!this.siteAutorise(site.id)) {
       this.error.set('Un membre du site ne peut réserver que sur son site');
+      this.notificationService.warning('Un membre du site ne peut réserver que sur son site.');
       this.resetChoixReservation(false);
       return;
     }

@@ -40,10 +40,11 @@ describe('CreateMatch', () => {
     expect(component.date).toBe('2026-08-01');
   });
 
-  it('prevents double creation submissions and shows success', () => {
+  it('prevents double creation submissions and shows success notification', () => {
     const create$ = new Subject<object>();
+    const notificationService = notificationMock();
     const matchService = matchServiceMock({ createMatch: vi.fn().mockReturnValue(create$) });
-    const component = createReadyComponent(matchService);
+    const component = createReadyComponent(matchService, notificationService);
 
     component.createMatch();
     component.createMatch();
@@ -55,12 +56,12 @@ describe('CreateMatch', () => {
     create$.complete();
 
     expect(component.submitting()).toBe(false);
-    expect(component.success()).toBe('Le match a été créé.');
+    expect(notificationService.success).toHaveBeenCalledWith('Match créé avec succès.');
   });
 });
 
-function createReadyComponent(matchService = matchServiceMock()) {
-  const component = createComponent({ matchService });
+function createReadyComponent(matchService = matchServiceMock(), notificationService = notificationMock()) {
+  const component = createComponent({ matchService, notificationService });
   component.date = '2026-08-01';
   component.heureSelected = '10:00';
   component.terrainId = 4;
@@ -68,11 +69,17 @@ function createReadyComponent(matchService = matchServiceMock()) {
   return component;
 }
 
-function createComponent(overrides: { matchService?: any; authService?: any; router?: any } = {}) {
+function createComponent(overrides: {
+  matchService?: any;
+  authService?: any;
+  router?: any;
+  notificationService?: any;
+} = {}) {
   return new CreateMatch(
     (overrides.matchService ?? matchServiceMock()) as any,
     (overrides.router ?? { navigate: vi.fn() }) as any,
     (overrides.authService ?? authServiceMock()) as any,
+    (overrides.notificationService ?? notificationMock()) as any,
   );
 }
 
@@ -95,5 +102,14 @@ function authServiceMock() {
     getTypeMembre: vi.fn().mockReturnValue('GLOBAL'),
     getSiteMembreId: vi.fn().mockReturnValue(null),
     getDelaiReservation: vi.fn().mockReturnValue(21),
+  };
+}
+
+function notificationMock() {
+  return {
+    success: vi.fn(),
+    error: vi.fn(),
+    warning: vi.fn(),
+    info: vi.fn(),
   };
 }

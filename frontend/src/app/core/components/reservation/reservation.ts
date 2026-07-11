@@ -3,6 +3,7 @@ import { finalize } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { ReservationService } from '../../services/reservation.service';
 import { getApiErrorMessage } from '../../utils/api-error.util';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-reservation',
@@ -12,10 +13,12 @@ import { getApiErrorMessage } from '../../utils/api-error.util';
 })
 export class Reservation {
   submitting = false;
-  error = '';
-  success = '';
 
-  constructor(private reservationService: ReservationService, private authService: AuthService) {}
+  constructor(
+    private reservationService: ReservationService,
+    private authService: AuthService,
+    private notificationService: NotificationService,
+  ) {}
 
   rejoindreMatch(match: any) {
     if (this.submitting) {
@@ -25,12 +28,10 @@ export class Reservation {
     const user = this.authService.getUser();
 
     if (!user) {
-      this.error = 'Vous devez être connecté pour réserver.';
+      this.notificationService.warning('Vous devez être connecté pour réserver.');
       return;
     }
 
-    this.error = '';
-    this.success = '';
     this.submitting = true;
 
     const input = {
@@ -42,11 +43,11 @@ export class Reservation {
       .pipe(finalize(() => (this.submitting = false)))
       .subscribe({
         next: () => {
-          this.success = 'Inscription réussie.';
+          this.notificationService.success('Réservation confirmée avec succès.');
           this.loadMatchs();
         },
         error: (err) => {
-          this.error = getApiErrorMessage(err, 'Inscription impossible');
+          this.notificationService.error(getApiErrorMessage(err, 'Inscription impossible.'));
         },
       });
   }
