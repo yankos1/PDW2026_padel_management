@@ -7,8 +7,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { Router } from '@angular/router';
+import { finalize } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
-import { getApiErrorMessage } from '../../utils/api-error.util';
+import { getApiErrorMessage, getApiFieldErrors } from '../../utils/api-error.util';
 
 @Component({
   selector: 'app-login',
@@ -30,10 +31,13 @@ export class LoginComponent {
   password = '';
   error = '';
   success = '';
+  loginLoading = false;
   adminPasswordRequired = false;
   adminPasswordCreation = false;
   showRegisterForm = false;
   registerLoading = false;
+  registerSubmitted = false;
+  registerFieldErrors: Record<string, string> = {};
   private matriculeStatusTimer?: ReturnType<typeof setTimeout>;
   registerForm = {
     nom: '',
@@ -47,10 +51,19 @@ export class LoginComponent {
   ) {}
 
   login() {
+    if (this.loginLoading) {
+      return;
+    }
+
     this.error = '';
     this.success = '';
 
-    if (this.adminPasswordRequired && !this.password) {
+    if (!this.matricule.trim()) {
+      this.error = 'Le matricule est obligatoire.';
+      return;
+    }
+
+    if (this.adminPasswordRequired && !this.password.trim()) {
       this.error = this.adminPasswordCreation
         ? 'Choisissez un mot de passe admin'
         : 'Mot de passe admin requis';
@@ -58,11 +71,14 @@ export class LoginComponent {
     }
 
     const password = this.adminPasswordRequired ? this.password : undefined;
+    this.loginLoading = true;
 
-    this.authService.login(this.matricule, password).subscribe({
+    this.authService.login(this.matricule.trim(), password)
+      .pipe(finalize(() => (this.loginLoading = false)))
+      .subscribe({
       next: (user) => {
-        console.log('utilisateur connecte:', user);
         this.authService.setUser(user);
+        this.success = 'Connexion réussie.';
         this.router.navigate(['/home']);
       },
       error: (err) => {
@@ -121,6 +137,8 @@ export class LoginComponent {
     this.showRegisterForm = !this.showRegisterForm;
     this.error = '';
     this.success = '';
+    this.registerFieldErrors = {};
+    this.registerSubmitted = false;
   }
 
   register() {
@@ -130,6 +148,8 @@ export class LoginComponent {
 
     this.error = '';
     this.success = '';
+    this.registerFieldErrors = {};
+    this.registerSubmitted = true;
 
     const input = {
       prenom: this.registerForm.prenom.trim(),
@@ -138,13 +158,15 @@ export class LoginComponent {
     };
 
     if (!input.prenom || !input.nom || !input.email) {
-      this.error = 'Completez tous les champs pour creer votre compte.';
+      this.error = 'Complétez tous les champs pour créer votre compte.';
       return;
     }
 
     this.registerLoading = true;
 
-    this.authService.register(input).subscribe({
+    this.authService.register(input)
+      .pipe(finalize(() => (this.registerLoading = false)))
+      .subscribe({
       next: (user) => {
         this.matricule = user.matricule;
         this.password = '';
@@ -156,14 +178,17 @@ export class LoginComponent {
           email: '',
         };
         this.showRegisterForm = false;
-        this.registerLoading = false;
-        this.success = `Compte cree! Votre matricule est ${user.matricule}, vous pouvez vous connecter.`;
+        this.success = `Compte créé ! Votre matricule est ${user.matricule}, vous pouvez vous connecter.`;
       },
       error: (err) => {
-        this.registerLoading = false;
-        this.error = this.errorMessage(err, 'Creation du compte impossible');
+        this.registerFieldErrors = getApiFieldErrors(err);
+        this.error = this.errorMessage(err, 'Création du compte impossible');
       },
     });
+  }
+
+  registerFieldError(field: string): string {
+    return this.registerFieldErrors[field] ?? '';
   }
 
   private errorMessage(err: unknown, fallback: string): string {

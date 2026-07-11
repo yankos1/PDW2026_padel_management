@@ -1,12 +1,28 @@
 <h2 class="title">Matchs publics disponibles</h2>
 
 @if (error()) {
-  <p class="error">{{ error() }}</p>
+  <p class="ux-alert error" aria-live="polite">{{ error() }}</p>
+  <p class="match-count">
+    <button mat-raised-button color="primary" class="retry-button" type="button" (click)="loadMatchs()" [disabled]="loading()">
+      Réessayer
+    </button>
+  </p>
 }
 
-<div class="match-container">
-  @for (match of matchs(); track match.id) {
+@if (success()) {
+  <p class="ux-alert success" aria-live="polite">{{ success() }}</p>
+}
 
+@if (loading()) {
+  <p class="ux-state" aria-live="polite">Chargement des matchs publics...</p>
+}
+
+<div class="match-container" [attr.aria-busy]="loading()">
+  @if (!loading() && !error() && matchs().length === 0) {
+    <p class="ux-state">Aucun match public disponible pour le moment.</p>
+  }
+
+  @for (match of matchs(); track match.id) {
     <mat-card class="match-card">
 
       <mat-card-header>
@@ -30,7 +46,7 @@
           <strong>{{ match.nbParticipants }}/4</strong>
         </p>
         @if (!peutReserver(match)) {
-          <p class="error">{{ raisonBlocageReservation(match) }}</p>
+          <p class="ux-alert error">{{ raisonBlocageReservation(match) }}</p>
         }
       </mat-card-content>
 
@@ -38,8 +54,8 @@
         <button
           mat-raised-button color="primary"
           (click)="ouvrirPaiement(match)"
-          [disabled]="!peutReserver(match)">
-          Rejoindre
+          [disabled]="!peutReserver(match) || joiningMatchId() !== null">
+          {{ joiningMatchId() === match.id ? 'Réservation en cours...' : 'Rejoindre' }}
         </button>
       </mat-card-actions>
 

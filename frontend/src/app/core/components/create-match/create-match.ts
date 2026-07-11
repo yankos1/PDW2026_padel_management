@@ -9,7 +9,8 @@ import { Terrain } from '../../models/terrain';
 import { MatCard } from '@angular/material/card';
 import { Site } from '../../models/site';
 import { AuthService } from '../../services/auth.service';
-import { getApiErrorMessage } from '../../utils/api-error.util';
+import { finalize } from 'rxjs';
+import { getApiErrorMessage, getApiFieldErrors } from '../../utils/api-error.util';
 
 @Component({
   selector: 'app-create-match',
@@ -39,6 +40,12 @@ export class CreateMatch implements OnInit {
   siteId: number | null = null;
 
   error = signal<string | null>(null);
+  success = signal<string | null>(null);
+  fieldErrors = signal<Record<string, string>>({});
+  loadingSites = signal(false);
+  loadingSlots = signal(false);
+  loadingTerrains = signal(false);
+  submitting = signal(false);
 
   constructor(
     private matchService: MatchService,
@@ -47,10 +54,17 @@ export class CreateMatch implements OnInit {
   ) {}
 
   ngOnInit() {
-    console.log('INIT OK');
-    this.matchService.getSites().subscribe({
+    this.loadSites();
+  }
+
+  loadSites() {
+    this.error.set(null);
+    this.loadingSites.set(true);
+
+    this.matchService.getSites()
+      .pipe(finalize(() => this.loadingSites.set(false)))
+      .subscribe({
       next: (data) => {
-        console.log('sites:', data);
         this.sites.set(data);
       },
       error: (err) => this.error.set(getApiErrorMessage(err, 'Erreur chargement des sites')),
@@ -58,6 +72,14 @@ export class CreateMatch implements OnInit {
   }
 
   createMatch() {
+    if (this.submitting()) {
+      return;
+    }
+
+    this.error.set(null);
+    this.success.set(null);
+    this.fieldErrors.set({});
+
     if (!this.date || !this.heureSelected || !this.terrainId) {
       this.error.set('Tous les champs sont obligatoires');
       return;
@@ -66,7 +88,7 @@ export class CreateMatch implements OnInit {
     const matricule = this.authService.getMatricule();
 
     if (!matricule) {
-      this.error.set('Vous devez etre connecte pour creer un match');
+      this.error.set('Vous devez être connecté pour créer un match');
       return;
     }
 
@@ -78,7 +100,7 @@ export class CreateMatch implements OnInit {
     }
 
     if (!this.siteAutorise(this.siteId)) {
-      this.error.set('Un membre du site ne peut reserver que sur son site');
+      this.error.set('Un membre du site ne peut réserver que sur son site');
       return;
     }
 
@@ -89,12 +111,19 @@ export class CreateMatch implements OnInit {
       estPublic: this.isPublic,
     };
 
-    console.log('DTO:', dto);
+    this.submitting.set(true);
 
-    this.matchService.createMatch(dto).subscribe({
-      next: () => this.router.navigate(['/mes-reservations']),
-      error: (err) =>
-        this.error.set(getApiErrorMessage(err, 'Erreur lors de la creation')),
+    this.matchService.createMatch(dto)
+      .pipe(finalize(() => this.submitting.set(false)))
+      .subscribe({
+      next: () => {
+        this.success.set('Le match a été créé.');
+        setTimeout(() => this.router.navigate(['/mes-reservations']), 700);
+      },
+      error: (err) => {
+        this.fieldErrors.set(getApiFieldErrors(err));
+        this.error.set(getApiErrorMessage(err, 'Erreur lors de la création'));
+      },
     });
   }
 
@@ -144,12 +173,9 @@ export class CreateMatch implements OnInit {
 
   onTerrainChange() {
     const terrain = this.terrains().find((t) => t.id === this.terrainId);
-    console.log('terrain selectionne :', terrain);
 
     if (terrain) {
       this.generateSlots(terrain.heureOuverture, terrain.heureFermeture);
-    } else {
-      console.log('pas de site ou heures');
     }
   }
 
@@ -172,20 +198,19 @@ export class CreateMatch implements OnInit {
 
     this.error.set(null);
     this.appliquerDisponibiliteTypeMatch();
+    this.loadingSlots.set(true);
 
-    this.matchService.getCreneauxDisponibles(this.date).subscribe({
+    this.matchService.getCreneauxDisponibles(this.date)
+      .pipe(finalize(() => this.loadingSlots.set(false)))
+      .subscribe({
       next: (data) => (this.slots = data),
       error: (err) => {
-        console.error('ERREUR BACK:', err);
         this.error.set(getApiErrorMessage(err, 'Erreur chargement terrains'));
       },
     });
   }
 
   onSlotChange() {
-    console.log('siteId =', this.siteId);
-    console.log('heure =', this.heureSelected);
-
     this.appliquerDisponibiliteTypeMatch();
 
     if (!this.date || !this.heureSelected || !this.siteId) {
@@ -193,16 +218,16 @@ export class CreateMatch implements OnInit {
     }
 
     this.terrainId = null;
+    this.loadingTerrains.set(true);
 
     this.matchService
       .getTerrainsDisponiblesParCreneau(this.date, this.heureSelected, this.siteId)
+      .pipe(finalize(() => this.loadingTerrains.set(false)))
       .subscribe({
         next: (data) => {
-          console.log('terrains filtres :', data);
           this.terrains.set(data);
         },
         error: (err) => {
-          console.error(err);
           this.error.set(getApiErrorMessage(err, 'Erreur chargement terrains'));
         },
       });
@@ -211,12 +236,10 @@ export class CreateMatch implements OnInit {
   protected onSiteChange() {
     const site = this.sites().find((s) => s.id === this.siteId);
 
-    console.log('site selectionne :', site);
-
     if (!site) return;
 
     if (!this.siteAutorise(site.id)) {
-      this.error.set('Un membre du site ne peut reserver que sur son site');
+      this.error.set('Un membre du site ne peut réserver que sur son site');
       this.resetChoixReservation(false);
       return;
     }
@@ -260,10 +283,10 @@ export class CreateMatch implements OnInit {
     const delai = this.authService.getDelaiReservation();
 
     if (delai === null) {
-      return 'Categorie de membre invalide';
+      return 'Catégorie de membre invalide';
     }
 
-    return `Vous pouvez reserver au maximum ${delai} jours avant la date du match`;
+    return `Vous pouvez réserver au maximum ${delai} jours avant la date du match`;
   }
 
   private resetChoixReservation(resetSite = true) {
@@ -276,5 +299,9 @@ export class CreateMatch implements OnInit {
     this.slots = [];
     this.terrains.set([]);
     this.appliquerDisponibiliteTypeMatch();
+  }
+
+  fieldError(field: string): string {
+    return this.fieldErrors()[field] ?? '';
   }
 }

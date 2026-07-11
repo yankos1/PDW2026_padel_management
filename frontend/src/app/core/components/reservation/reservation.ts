@@ -1,8 +1,8 @@
 import { Component } from '@angular/core';
-import { ReservationService } from '../../services/reservation.service';
+import { finalize } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
+import { ReservationService } from '../../services/reservation.service';
 import { getApiErrorMessage } from '../../utils/api-error.util';
-
 
 @Component({
   selector: 'app-reservation',
@@ -11,37 +11,45 @@ import { getApiErrorMessage } from '../../utils/api-error.util';
   styleUrl: './reservation.css',
 })
 export class Reservation {
-  constructor(private reservationService: ReservationService, private authService: AuthService) {
-  }
+  submitting = false;
+  error = '';
+  success = '';
 
-  rejoindreMatch(match:any) {
-    const user = this.authService.getUser();
+  constructor(private reservationService: ReservationService, private authService: AuthService) {}
 
-    if (!user) {
-      alert('Pas de matricule');
+  rejoindreMatch(match: any) {
+    if (this.submitting) {
       return;
     }
 
-    const input={
+    const user = this.authService.getUser();
+
+    if (!user) {
+      this.error = 'Vous devez être connecté pour réserver.';
+      return;
+    }
+
+    this.error = '';
+    this.success = '';
+    this.submitting = true;
+
+    const input = {
       matricule: user.matricule,
-      matchId: match.id
+      matchId: match.id,
     };
 
     this.reservationService.rejoindreMatch(input)
+      .pipe(finalize(() => (this.submitting = false)))
       .subscribe({
-        next:(res) =>{
-          console.log('Réservation crée',res);
-          alert("Inscription réussie");
+        next: () => {
+          this.success = 'Inscription réussie.';
           this.loadMatchs();
         },
-        error:(err) =>{
-          console.error(err);
-          alert(getApiErrorMessage(err, 'Inscription impossible'));
-        }
+        error: (err) => {
+          this.error = getApiErrorMessage(err, 'Inscription impossible');
+        },
       });
   }
 
-  private loadMatchs() {
-
-  }
+  private loadMatchs() {}
 }

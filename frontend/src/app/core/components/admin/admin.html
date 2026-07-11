@@ -3,28 +3,114 @@
 <div class="match-container">
 
   @if (error) {
-    <p class="match-count text-red-500">{{ error }}</p>
+    <p class="ux-alert error" aria-live="polite">{{ error }}</p>
   }
 
-  @if (!error && loading) {
-    <p class="match-count">Chargement...</p>
-  }
-
-  @if (!error && !loading) {
-
+  @if (!error) {
     <mat-card class="match-card">
       <mat-card-header>
         <mat-card-title>Statistiques générales</mat-card-title>
+        <mat-card-subtitle>Vue d'ensemble de l'activité</mat-card-subtitle>
       </mat-card-header>
 
       <mat-card-content>
-        <p>Matchs : {{ matchs }}</p>
-        <p>Chiffre d'affaires : {{ ca }} €</p>
-        <p>Membres : {{ membres }}</p>
-        <p>Terrains : {{ terrains }}</p>
-        <p>Taux de remplissage : {{ taux | number:'1.0-2' }} %</p>
+        <p>
+          Matchs :
+          @if (loadingStats.matchs) {
+            <span>Chargement...</span>
+          } @else if (statErrors.matchs) {
+            <span class="field-error">{{ statErrors.matchs }}</span>
+            <button mat-button type="button" (click)="retryStat('matchs')">Réessayer</button>
+          } @else if (matchs !== null) {
+            <strong>{{ matchs }}</strong>
+          } @else {
+            <span>Aucune donnée disponible.</span>
+          }
+        </p>
+
+        <p>
+          Chiffre d'affaires :
+          @if (loadingStats.ca) {
+            <span>Chargement...</span>
+          } @else if (statErrors.ca) {
+            <span class="field-error">{{ statErrors.ca }}</span>
+            <button mat-button type="button" (click)="retryStat('ca')">Réessayer</button>
+          } @else if (ca !== null) {
+            <strong>{{ ca | number:'1.0-2' }} EUR</strong>
+          } @else {
+            <span>Aucune donnée disponible.</span>
+          }
+        </p>
+
+        <p>
+          Membres :
+          @if (loadingStats.membres) {
+            <span>Chargement...</span>
+          } @else if (statErrors.membres) {
+            <span class="field-error">{{ statErrors.membres }}</span>
+            <button mat-button type="button" (click)="retryStat('membres')">Réessayer</button>
+          } @else if (membres !== null) {
+            <strong>{{ membres }}</strong>
+          } @else {
+            <span>Aucune donnée disponible.</span>
+          }
+        </p>
+
+        <p>
+          Terrains :
+          @if (loadingStats.terrains) {
+            <span>Chargement...</span>
+          } @else if (statErrors.terrains) {
+            <span class="field-error">{{ statErrors.terrains }}</span>
+            <button mat-button type="button" (click)="retryStat('terrains')">Réessayer</button>
+          } @else if (terrains !== null) {
+            <strong>{{ terrains }}</strong>
+          } @else {
+            <span>Aucune donnée disponible.</span>
+          }
+        </p>
+
+        <p>
+          Taux de remplissage :
+          @if (loadingStats.taux) {
+            <span>Chargement...</span>
+          } @else if (statErrors.taux) {
+            <span class="field-error">{{ statErrors.taux }}</span>
+            <button mat-button type="button" (click)="retryStat('taux')">Réessayer</button>
+          } @else if (taux !== null) {
+            <strong>{{ taux | number:'1.0-2' }} %</strong>
+          } @else {
+            <span>Aucune donnée disponible.</span>
+          }
+        </p>
       </mat-card-content>
     </mat-card>
+
+    @if (loadingSites || loadingRevenus) {
+      <p class="ux-state" aria-live="polite">Chargement des statistiques par site...</p>
+    }
+
+    @if (sitesError) {
+      <p class="ux-alert error" aria-live="polite">{{ sitesError }}</p>
+      <p class="match-count">
+        <button mat-raised-button color="primary" type="button" (click)="loadSites()" [disabled]="loadingSites">
+          Réessayer
+        </button>
+      </p>
+    }
+
+    @if (revenusError) {
+      <p class="ux-alert error" aria-live="polite">{{ revenusError }}</p>
+      <p class="match-count">
+        <button mat-raised-button color="primary" type="button" (click)="loadRevenus()" [disabled]="loadingRevenus">
+          Réessayer
+        </button>
+      </p>
+    }
+
+    @if (!loadingSites && !sitesError && sites.length === 0) {
+      <p class="ux-state">Aucun site disponible pour les statistiques.</p>
+    }
 
     @for (site of sites; track site.id) {
       <mat-card class="match-card">
@@ -37,13 +123,20 @@
         <mat-card-content>
           <p>
             Montant :
-            <strong>{{ revenus[site.name] || 0 }} €</strong>
+            @if (loadingRevenus) {
+              <span>Chargement...</span>
+            } @else if (revenusError) {
+              <span class="field-error">Donnée indisponible</span>
+            } @else if (revenus !== null && revenus[site.name] !== undefined) {
+              <strong>{{ revenus[site.name] | number:'1.0-2' }} EUR</strong>
+            } @else {
+              <span>Aucune donnée disponible pour cette période.</span>
+            }
           </p>
         </mat-card-content>
 
       </mat-card>
     }
-
   }
 
 </div>

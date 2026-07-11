@@ -1,76 +1,118 @@
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { MatchListComponent } from './match-list.component';
 
 describe('MatchListComponent', () => {
-  it('keeps previous matches and shows an error when reservations fail', () => {
-    const matchService = {
-      getMatchDisponibles: vi.fn().mockReturnValue(of([])),
-    };
-    const reservationService = {
-      getMesReservations: vi.fn().mockReturnValue(throwError(() => ({
-        error: {
-          status: 401,
-          message: 'Authentification requise',
-          timestamp: '2026-07-10T18:00:00Z',
-          fieldErrors: {},
-        },
-      }))),
-      rejoindreMatch: vi.fn(),
-      payerReservation: vi.fn(),
-    };
-    const authService = {
-      getMatricule: vi.fn().mockReturnValue('G0002'),
-      canReserveDate: vi.fn().mockReturnValue(true),
-      getDelaiReservation: vi.fn().mockReturnValue(21),
-      getSiteMembreId: vi.fn().mockReturnValue(null),
-      getTypeMembre: vi.fn().mockReturnValue('GLOBAL'),
-    };
-    const component = new MatchListComponent(
-      matchService as any,
-      reservationService as any,
-      authService as any,
-    );
-    component.matchs.set([{ id: 99, dateHeureDebut: new Date(Date.now() + 60_000).toISOString() }]);
+  it('shows and hides the loader while matches are loading', () => {
+    const matchs$ = new Subject<any[]>();
+    const reservations$ = new Subject<any[]>();
+    const component = createComponent({
+      matchService: { getMatchDisponibles: vi.fn().mockReturnValue(matchs$) },
+      reservationService: { getMesReservations: vi.fn().mockReturnValue(reservations$) },
+    });
 
-    component.ngOnInit();
+    component.loadMatchs();
 
-    expect(component.matchs().map((match: any) => match.id)).toEqual([99]);
-    expect(component.error()).toBe('Authentification requise');
-    expect(matchService.getMatchDisponibles).toHaveBeenCalledTimes(1);
-    expect(reservationService.getMesReservations).toHaveBeenCalledTimes(1);
+    expect(component.loading()).toBe(true);
+
+    matchs$.next([]);
+    matchs$.complete();
+    reservations$.next([]);
+    reservations$.complete();
+
+    expect(component.loading()).toBe(false);
+    expect(component.matchs()).toEqual([]);
   });
 
-  it('filters already reserved matches without duplicate calls', () => {
-    const matchs = [
-      { id: 1, dateHeureDebut: new Date(Date.now() + 60_000).toISOString() },
-      { id: 2, dateHeureDebut: new Date(Date.now() + 60_000).toISOString() },
-    ];
-    const matchService = {
-      getMatchDisponibles: vi.fn().mockReturnValue(of(matchs)),
-    };
+  it('hides the loader and shows a backend message after an error', () => {
+    const component = createComponent({
+      reservationService: {
+        getMesReservations: vi.fn().mockReturnValue(throwError(() => ({
+          error: {
+            status: 401,
+            message: 'Authentification requise',
+            timestamp: '2026-07-10T18:00:00Z',
+            fieldErrors: {},
+          },
+        }))),
+      },
+    });
+
+    component.loadMatchs();
+
+    expect(component.loading()).toBe(false);
+    expect(component.error()).toBe('Authentification requise');
+  });
+
+  it('filters already reserved matches and exposes an empty state', () => {
+    const component = createComponent({
+      matchService: {
+        getMatchDisponibles: vi.fn().mockReturnValue(of([
+          { id: 1, dateHeureDebut: futureDate() },
+        ])),
+      },
+      reservationService: {
+        getMesReservations: vi.fn().mockReturnValue(of([{ match: { id: 1 } }])),
+      },
+    });
+
+    component.loadMatchs();
+
+    expect(component.matchs()).toEqual([]);
+    expect(component.error()).toBeNull();
+  });
+
+  it('prevents double reservation submissions and shows success', () => {
+    const join$ = new Subject<any>();
     const reservationService = {
-      getMesReservations: vi.fn().mockReturnValue(of([{ match: { id: 1 } }])),
-      rejoindreMatch: vi.fn(),
+      getMesReservations: vi.fn().mockReturnValue(of([])),
+      rejoindreMatch: vi.fn().mockReturnValue(join$),
       payerReservation: vi.fn(),
     };
-    const authService = {
-      getMatricule: vi.fn().mockReturnValue('G0002'),
-      canReserveDate: vi.fn().mockReturnValue(true),
-      getDelaiReservation: vi.fn().mockReturnValue(21),
-      getSiteMembreId: vi.fn().mockReturnValue(null),
-      getTypeMembre: vi.fn().mockReturnValue('GLOBAL'),
-    };
-    const component = new MatchListComponent(
-      matchService as any,
-      reservationService as any,
-      authService as any,
-    );
+    const component = createComponent({ reservationService });
+    const match = { id: 7, dateHeureDebut: futureDate(), siteId: 1 };
 
-    component.ngOnInit();
+    component.rejoindreMatch(match);
+    component.rejoindreMatch(match);
 
-    expect(component.matchs().map((match: any) => match.id)).toEqual([2]);
-    expect(matchService.getMatchDisponibles).toHaveBeenCalledTimes(1);
-    expect(reservationService.getMesReservations).toHaveBeenCalledTimes(1);
+    expect(reservationService.rejoindreMatch).toHaveBeenCalledTimes(1);
+    expect(component.joiningMatchId()).toBe(7);
+
+    join$.next({ id: 22 });
+    join$.complete();
+
+    expect(component.joiningMatchId()).toBeNull();
+    expect(component.success()).toBe('Réservation en attente de paiement.');
   });
 });
+
+function createComponent(overrides: {
+  matchService?: any;
+  reservationService?: any;
+  authService?: any;
+} = {}) {
+  const matchService = {
+    getMatchDisponibles: vi.fn().mockReturnValue(of([])),
+    ...overrides.matchService,
+  };
+  const reservationService = {
+    getMesReservations: vi.fn().mockReturnValue(of([])),
+    rejoindreMatch: vi.fn().mockReturnValue(of({ id: 1 })),
+    payerReservation: vi.fn().mockReturnValue(of({})),
+    ...overrides.reservationService,
+  };
+  const authService = {
+    getMatricule: vi.fn().mockReturnValue('G0002'),
+    canReserveDate: vi.fn().mockReturnValue(true),
+    getDelaiReservation: vi.fn().mockReturnValue(21),
+    getSiteMembreId: vi.fn().mockReturnValue(null),
+    getTypeMembre: vi.fn().mockReturnValue('GLOBAL'),
+    ...overrides.authService,
+  };
+
+  return new MatchListComponent(matchService as any, reservationService as any, authService as any);
+}
+
+function futureDate(): string {
+  return new Date(Date.now() + 60_000).toISOString();
+}

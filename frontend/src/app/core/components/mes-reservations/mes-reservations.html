@@ -1,13 +1,30 @@
-<h2 class="title">Mes reservations</h2>
+<h2 class="title">Mes réservations</h2>
 
-<div class="match-container">
+@if (error()) {
+  <p class="ux-alert error" aria-live="polite">{{ error() }}</p>
+  <p class="match-count">
+    <button mat-raised-button color="primary" class="retry-button" type="button" (click)="loadReservations()" [disabled]="loading()">
+      Réessayer
+    </button>
+  </p>
+}
 
-  @if (reservations().length === 0) {
-    <p class="match-count">Aucune reservation</p>
+@if (success()) {
+  <p class="ux-alert success" aria-live="polite">{{ success() }}</p>
+}
+
+@if (loading()) {
+  <p class="ux-state" aria-live="polite">Chargement de vos réservations...</p>
+}
+
+<div class="match-container" [attr.aria-busy]="loading()">
+
+  @if (!loading() && !error() && reservations().length === 0) {
+    <p class="ux-state">Vous n'avez encore aucune réservation.</p>
   }
 
   @if (reservationsAVenir().length > 0) {
-    <h3 class="section-title">A venir</h3>
+    <h3 class="section-title">À venir</h3>
 
     @for (r of reservationsAVenir(); track r.id) {
       <mat-card class="match-card">
@@ -25,17 +42,17 @@
               {{ libelleTypeMatch(r) }}
             </span>
             @if (estResponsable(r)) {
-              <span class="badge organizer">Vous etes l'organisateur</span>
+              <span class="badge organizer">Vous êtes l'organisateur</span>
             }
           </div>
 
           <p>
             Site :
-            <strong>{{ r.match.site || 'Non renseigne' }}</strong>
+            <strong>{{ r.match.site || 'Non renseigné' }}</strong>
           </p>
           <p>
             Terrain :
-            <strong>{{ r.match.terrain || r.match.terrainNom || 'Non renseigne' }}</strong>
+            <strong>{{ r.match.terrain || r.match.terrainNom || 'Non renseigné' }}</strong>
           </p>
           <p>Participants : {{ r.match.nbParticipants }}/4</p>
 
@@ -44,7 +61,7 @@
               <div>
                 <strong>Ajouter les joueurs du match</strong>
                 <p>
-                  Match privé : vous devez ajouter vous-meme les autres joueurs.
+                  Match privé : vous devez ajouter vous-même les autres joueurs.
                   {{ placesRestantes(r) }} place(s) restante(s).
                 </p>
               </div>
@@ -57,16 +74,17 @@
                     name="joueurMatricule-{{ r.match.id }}"
                     [(ngModel)]="joueurMatricules[r.match.id]"
                     placeholder="Ex. G0002"
+                    [disabled]="addingPlayerMatchId() !== null"
                     required
                   >
                 </mat-form-field>
-                <button mat-raised-button color="primary" type="submit">
-                  Ajouter au match
+                <button mat-raised-button color="primary" type="submit" [disabled]="addingPlayerMatchId() !== null">
+                  {{ addingPlayerMatchId() === r.match.id ? 'Ajout en cours...' : 'Ajouter au match' }}
                 </button>
               </form>
 
               @if (erreursAjout[r.match.id]) {
-                <p class="error">{{ erreursAjout[r.match.id] }}</p>
+                <p class="ux-alert error" aria-live="polite">{{ erreursAjout[r.match.id] }}</p>
               }
             </div>
           }
@@ -84,8 +102,9 @@
         <mat-card-actions>
           @if (!estPayee(r)) {
             <button mat-raised-button color="primary"
-                    (click)="payerReservation(r.id)">
-              Payer
+                    (click)="payerReservation(r.id)"
+                    [disabled]="payingReservationId() !== null">
+              {{ payingReservationId() === r.id ? 'Paiement en cours...' : 'Payer' }}
             </button>
           }
         </mat-card-actions>
@@ -113,7 +132,7 @@
               {{ libelleTypeMatch(r) }}
             </span>
             @if (estResponsable(r)) {
-              <span class="badge organizer">Vous etes l'organisateur</span>
+              <span class="badge organizer">Vous êtes l'organisateur</span>
             }
           </div>
 

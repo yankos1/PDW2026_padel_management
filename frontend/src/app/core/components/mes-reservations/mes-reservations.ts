@@ -1,19 +1,20 @@
+import { DatePipe } from '@angular/common';
 import { Component, signal } from '@angular/core';
-import { ReservationService } from '../../services/reservation.service';
-import { AuthService } from '../../services/auth.service';
+import { FormsModule } from '@angular/forms';
+import { MatButton } from '@angular/material/button';
 import {
   MatCard,
   MatCardActions,
   MatCardContent,
   MatCardHeader,
   MatCardSubtitle,
-  MatCardTitle
+  MatCardTitle,
 } from '@angular/material/card';
-import { DatePipe } from '@angular/common';
-import { MatButton } from '@angular/material/button';
-import { FormsModule } from '@angular/forms';
-import { MatInput } from '@angular/material/input';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
+import { MatInput } from '@angular/material/input';
+import { finalize } from 'rxjs';
+import { AuthService } from '../../services/auth.service';
+import { ReservationService } from '../../services/reservation.service';
 import { getApiErrorMessage } from '../../utils/api-error.util';
 
 @Component({
@@ -37,7 +38,12 @@ import { getApiErrorMessage } from '../../utils/api-error.util';
 })
 export class MesReservations {
   // TODO [BONUS] Ajouter recherche, filtres et tri sur les reservations affichees.
-  reservations = signal<any>([]);
+  reservations = signal<any[]>([]);
+  loading = signal(false);
+  error = signal<string | null>(null);
+  success = signal<string | null>(null);
+  payingReservationId = signal<number | null>(null);
+  addingPlayerMatchId = signal<number | null>(null);
   joueurMatricules: Record<number, string> = {};
   erreursAjout: Record<number, string> = {};
 
@@ -47,34 +53,52 @@ export class MesReservations {
   ) {}
 
   ngOnInit() {
+    this.loadReservations();
+  }
+
+  loadReservations() {
     const matricule = this.authService.getMatricule();
 
     if (!matricule) {
-      console.error('Utilisateur non connecté');
+      this.error.set('Vous devez être connecté pour consulter vos réservations.');
       return;
     }
 
-    this.reservationService.getMesReservations(matricule).subscribe({
-      next: (data) => {
-        console.log('Mes réservations:', data);
-        this.reservations.set(data);
-      },
-      error: (err) => console.error(err),
-    });
+    this.error.set(null);
+    this.loading.set(true);
+
+    this.reservationService.getMesReservations(matricule)
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: (data) => {
+          this.reservations.set(data);
+        },
+        error: (err) => {
+          this.error.set(getApiErrorMessage(err, 'Impossible de charger vos réservations.'));
+        },
+      });
   }
 
   payerReservation(id: number) {
-    this.reservationService.payerReservation(id).subscribe({
-      next: () => {
-        console.log('Paiement réussi');
+    if (this.payingReservationId() !== null) {
+      return;
+    }
 
-        this.ngOnInit();
-      },
-      error: (err) => {
-        console.error('Erreur paiement', err);
-        alert(getApiErrorMessage(err, 'Erreur lors du paiement'));
-      }
-    });
+    this.error.set(null);
+    this.success.set(null);
+    this.payingReservationId.set(id);
+
+    this.reservationService.payerReservation(id)
+      .pipe(finalize(() => this.payingReservationId.set(null)))
+      .subscribe({
+        next: () => {
+          this.success.set('Le paiement a été enregistré.');
+          this.loadReservations();
+        },
+        error: (err) => {
+          this.error.set(getApiErrorMessage(err, 'Erreur lors du paiement'));
+        },
+      });
   }
 
   ajouterJoueurMatchPrive(reservation: any) {
@@ -86,19 +110,28 @@ export class MesReservations {
       return;
     }
 
+    if (this.addingPlayerMatchId() !== null) {
+      return;
+    }
+
+    this.success.set(null);
+    this.erreursAjout[reservation.match.id] = '';
+    this.addingPlayerMatchId.set(reservation.match.id);
+
     this.reservationService.ajouterJoueurMatchPrive({
       organisateurMatricule,
       joueurMatricule,
       matchId: reservation.match.id,
-    }).subscribe({
+    }).pipe(finalize(() => this.addingPlayerMatchId.set(null))).subscribe({
       next: () => {
         this.joueurMatricules[reservation.match.id] = '';
         this.erreursAjout[reservation.match.id] = '';
-        this.ngOnInit();
+        this.success.set('Le joueur a été ajouté au match privé.');
+        this.loadReservations();
       },
       error: (err) => {
         this.erreursAjout[reservation.match.id] =
-          getApiErrorMessage(err, 'Erreur lors de l ajout du joueur');
+          getApiErrorMessage(err, 'Erreur lors de l’ajout du joueur');
       },
     });
   }

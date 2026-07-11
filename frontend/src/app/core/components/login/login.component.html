@@ -8,7 +8,7 @@
     </div>
 
     <mat-card-content>
-      <form (ngSubmit)="login()">
+      <form (ngSubmit)="login()" [attr.aria-busy]="loginLoading">
 
         <div class="form-field">
           <label>Matricule</label>
@@ -25,11 +25,11 @@
 
         @if (adminPasswordRequired) {
           <div class="form-field">
-            <label>{{ adminPasswordCreation ? 'Creer le mot de passe admin' : 'Mot de passe admin' }}</label>
+            <label>{{ adminPasswordCreation ? 'Créer le mot de passe admin' : 'Mot de passe admin' }}</label>
             <input
               matInput
               type="password"
-              [placeholder]="adminPasswordCreation ? 'Minimum 12 caracteres' : 'Mot de passe admin'"
+              [placeholder]="adminPasswordCreation ? 'Minimum 12 caractères' : 'Mot de passe admin'"
               name="password"
               [(ngModel)]="password"
               required
@@ -38,25 +38,25 @@
         }
 
         @if (error) {
-          <p class="error">{{ error }}</p>
+          <p class="ux-alert error" aria-live="polite">{{ error }}</p>
         }
 
         @if (success) {
-          <p class="success">{{ success }}</p>
+          <p class="ux-alert success" aria-live="polite">{{ success }}</p>
         }
 
-        <button class="btn-primary" type="submit">
-          Se connecter
+        <button class="btn-primary" type="submit" [disabled]="loginLoading">
+          {{ loginLoading ? 'Connexion...' : 'Se connecter' }}
         </button>
 
-        <button class="create-account-link" type="button" (click)="toggleRegisterForm()">
-          Creer un compte
+        <button class="create-account-link" type="button" (click)="toggleRegisterForm()" [disabled]="loginLoading">
+          Créer un compte
         </button>
 
       </form>
 
       @if (showRegisterForm) {
-        <form class="register-form" (ngSubmit)="register()">
+        <form class="register-form" (ngSubmit)="register()" [attr.aria-busy]="registerLoading">
           <div class="form-field">
             <label>Prenom</label>
             <input
@@ -66,6 +66,12 @@
               [disabled]="registerLoading"
               required
             />
+            @if (registerSubmitted && !registerForm.prenom.trim()) {
+              <p class="field-error">Le prenom est obligatoire.</p>
+            }
+            @if (registerFieldError('prenom')) {
+              <p class="field-error">{{ registerFieldError('prenom') }}</p>
+            }
           </div>
 
           <div class="form-field">
@@ -77,6 +83,12 @@
               [disabled]="registerLoading"
               required
             />
+            @if (registerSubmitted && !registerForm.nom.trim()) {
+              <p class="field-error">Le nom est obligatoire.</p>
+            }
+            @if (registerFieldError('nom')) {
+              <p class="field-error">{{ registerFieldError('nom') }}</p>
+            }
           </div>
 
           <div class="form-field">
@@ -89,10 +101,16 @@
               [disabled]="registerLoading"
               required
             />
+            @if (registerSubmitted && !registerForm.email.trim()) {
+              <p class="field-error">L'email est obligatoire.</p>
+            }
+            @if (registerFieldError('email')) {
+              <p class="field-error">{{ registerFieldError('email') }}</p>
+            }
           </div>
 
           <button class="btn-secondary" type="submit" [disabled]="registerLoading">
-            {{ registerLoading ? 'Creation en cours...' : 'Valider la creation' }}
+            {{ registerLoading ? 'Création en cours...' : 'Valider la création' }}
           </button>
         </form>
       }

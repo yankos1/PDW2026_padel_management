@@ -4,9 +4,12 @@
 
   <mat-card class="match-card">
 
-    <form (ngSubmit)="createMatch()" #form="ngForm">
+    @if (loadingSites()) {
+      <p class="ux-state" aria-live="polite">Chargement des sites...</p>
+    }
 
-      <!-- DATE -->
+    <form (ngSubmit)="createMatch()" #form="ngForm" [attr.aria-busy]="submitting() || loadingSites() || loadingSlots() || loadingTerrains()">
+
       <mat-form-field appearance="outline" class="w-full">
         <mat-label>Date du match</mat-label>
 
@@ -18,16 +21,19 @@
           name="date"
           [min]="dateMin"
           [max]="dateMax"
+          [disabled]="submitting()"
           required
         >
 
         @if (!date && form.submitted) {
           <mat-error>La date est obligatoire</mat-error>
         }
+        @if (fieldError('date')) {
+          <mat-error>{{ fieldError('date') }}</mat-error>
+        }
 
       </mat-form-field>
 
-      <!-- SITE -->
       <mat-form-field appearance="outline" class="w-full">
 
         <mat-label>Choisir un site</mat-label>
@@ -36,7 +42,7 @@
           [(ngModel)]="siteId"
           name="siteId"
           (selectionChange)="onSiteChange()"
-          [disabled]="!date"
+          [disabled]="!date || loadingSites() || submitting()"
           required
         >
 
@@ -55,10 +61,16 @@
         @if (!siteId && form.submitted) {
           <mat-error>Le site est obligatoire</mat-error>
         }
+        @if (fieldError('siteId')) {
+          <mat-error>{{ fieldError('siteId') }}</mat-error>
+        }
 
       </mat-form-field>
 
-      <!-- CRENEAU -->
+      @if (loadingSlots()) {
+        <p class="ux-state" aria-live="polite">Chargement des créneaux...</p>
+      }
+
       <mat-form-field appearance="outline" class="w-full">
 
         <mat-label>Heure du match</mat-label>
@@ -67,7 +79,7 @@
           [(ngModel)]="heureSelected"
           (selectionChange)="onSlotChange()"
           name="slot"
-          [disabled]="!siteId"
+          [disabled]="!siteId || loadingSlots() || submitting()"
           required
         >
 
@@ -89,7 +101,14 @@
 
       </mat-form-field>
 
-      <!-- TERRAIN -->
+      @if (!loadingSlots() && siteId && slots.length === 0) {
+        <p class="ux-state">Aucun créneau disponible pour ce site.</p>
+      }
+
+      @if (loadingTerrains()) {
+        <p class="ux-state" aria-live="polite">Chargement des terrains...</p>
+      }
+
       <mat-form-field appearance="outline" class="w-full">
 
         <mat-label>Choisir un terrain</mat-label>
@@ -98,7 +117,7 @@
           [(ngModel)]="terrainId"
           name="terrainId"
           (selectionChange)="onTerrainChange()"
-          [disabled]="!heureSelected"
+          [disabled]="!heureSelected || loadingTerrains() || submitting()"
           required
         >
 
@@ -117,15 +136,21 @@
         @if (!terrainId && form.submitted) {
           <mat-error>Le terrain est obligatoire</mat-error>
         }
+        @if (fieldError('terrainID')) {
+          <mat-error>{{ fieldError('terrainID') }}</mat-error>
+        }
 
       </mat-form-field>
 
-      <!-- TYPE -->
+      @if (!loadingTerrains() && heureSelected && terrains().length === 0) {
+        <p class="ux-state">Aucun terrain n'est disponible pour ce créneau.</p>
+      }
+
       <mat-form-field appearance="outline" class="w-full">
 
         <mat-label>Type de match</mat-label>
 
-        <mat-select [(ngModel)]="isPublic" name="public">
+        <mat-select [(ngModel)]="isPublic" name="public" [disabled]="submitting()">
 
           <mat-option [value]="true">
             Public
@@ -139,20 +164,22 @@
 
       </mat-form-field>
 
-      <!-- ERREUR -->
       @if (error()) {
-        <p class="error">{{ error() }}</p>
+        <p class="ux-alert error" aria-live="polite">{{ error() }}</p>
       }
 
-      <!-- BOUTON -->
+      @if (success()) {
+        <p class="ux-alert success" aria-live="polite">{{ success() }}</p>
+      }
+
       <button
         mat-raised-button
         color="primary"
         class="w-full mt-4"
         type="submit"
-        [disabled]="form.invalid"
+        [disabled]="form.invalid || submitting()"
       >
-        Créer le match
+        {{ submitting() ? 'Création en cours...' : 'Créer le match' }}
       </button>
 
     </form>

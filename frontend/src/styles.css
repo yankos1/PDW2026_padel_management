@@ -83,6 +83,51 @@ mat-card-actions a {
   margin-top: 20px;
   font-size: 16px;
 }
+
+.ux-alert,
+.ux-state {
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 12px 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.ux-alert.error,
+.error {
+  color: #991b1b;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+}
+
+.ux-alert.success,
+.success {
+  color: #166534;
+  background: #dcfce7;
+  border: 1px solid #bbf7d0;
+}
+
+.ux-state {
+  color: #334155;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  text-align: center;
+}
+
+button[disabled] {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.field-error {
+  color: #991b1b;
+  font-size: 13px;
+  margin: 4px 0 0;
+}
+
+.retry-button {
+  margin-top: 8px;
+}
 .title {
   text-align: center;
   margin-top: 20px;
