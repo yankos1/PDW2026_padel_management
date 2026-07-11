@@ -1,6 +1,7 @@
 import { of, Subject, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { MatchListComponent } from './match-list.component';
+import { Match } from '../../models/match';
 
 describe('MatchListComponent', () => {
   it('shows and hides the loader while matches are loading', () => {
@@ -48,7 +49,7 @@ describe('MatchListComponent', () => {
     const component = createComponent({
       matchService: {
         getMatchDisponibles: vi.fn().mockReturnValue(of([
-          { id: 1, dateHeureDebut: futureDate() },
+          matchFixture({ id: 1 }),
         ])),
       },
       reservationService: {
@@ -71,7 +72,7 @@ describe('MatchListComponent', () => {
       payerReservation: vi.fn(),
     };
     const component = createComponent({ reservationService, notificationService });
-    const match = { id: 7, dateHeureDebut: futureDate(), siteId: 1 };
+    const match = matchFixture({ id: 7, siteId: 1 });
 
     component.rejoindreMatch(match);
     component.rejoindreMatch(match);
@@ -89,8 +90,8 @@ describe('MatchListComponent', () => {
   it('filters matches case-insensitively and trims spaces', () => {
     const component = createComponent();
     component.matchs.set([
-      { id: 1, site: 'Bruxelles', terrain: 'Central', dateHeureDebut: futureDate(), statut: 'PLANIFIE', estPublic: true },
-      { id: 2, site: 'Namur', terrain: 'Court 2', dateHeureDebut: futureDate(), statut: 'COMPLET', estPublic: true },
+      matchFixture({ id: 1, site: 'Bruxelles', terrain: 'Central', statut: 'PLANIFIE', estPublic: true }),
+      matchFixture({ id: 2, site: 'Namur', terrain: 'Court 2', statut: 'COMPLET', estPublic: true }),
     ]);
 
     component.searchTerm = '  brux ';
@@ -112,7 +113,7 @@ describe('MatchListComponent', () => {
     const component = createComponent({ dialog });
     const payer = vi.spyOn(component, 'payerMatchPublic');
 
-    component.ouvrirPaiement({ id: 7, dateHeureDebut: futureDate(), siteId: 1 });
+    component.ouvrirPaiement(matchFixture({ id: 7, siteId: 1 }));
 
     expect(payer).not.toHaveBeenCalled();
   });
@@ -122,7 +123,7 @@ describe('MatchListComponent', () => {
     const component = createComponent({ dialog });
     const payer = vi.spyOn(component, 'payerMatchPublic');
 
-    component.ouvrirPaiement({ id: 7, dateHeureDebut: futureDate(), siteId: 1 });
+    component.ouvrirPaiement(matchFixture({ id: 7, siteId: 1 }));
 
     expect(payer).toHaveBeenCalledTimes(1);
   });
@@ -165,6 +166,21 @@ function createComponent(overrides: {
 
 function futureDate(): string {
   return new Date(Date.now() + 60_000).toISOString();
+}
+
+function matchFixture(overrides: Partial<Match> = {}): Match {
+  return {
+    id: overrides.id ?? 1,
+    nbParticipants: overrides.nbParticipants ?? 2,
+    terrain: overrides.terrain ?? 'Central',
+    terrainNom: overrides.terrainNom,
+    siteId: overrides.siteId ?? 1,
+    site: overrides.site ?? 'Bruxelles',
+    dateHeureDebut: overrides.dateHeureDebut ?? futureDate(),
+    organisateurMatricule: overrides.organisateurMatricule ?? 'G0002',
+    estPublic: overrides.estPublic ?? true,
+    statut: overrides.statut ?? 'PLANIFIE',
+  };
 }
 
 function notificationMock() {

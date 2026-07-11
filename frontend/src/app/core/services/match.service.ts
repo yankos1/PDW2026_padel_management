@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Terrain } from '../models/terrain';
 import { Site } from '../models/site';
+import { CreateMatchPayload, Match } from '../models/match';
 
 @Injectable({ providedIn: 'root' })
 export class MatchService {
@@ -10,16 +11,13 @@ export class MatchService {
   constructor(private http: HttpClient) {}
 
   getMatchDisponibles() {
-    return this.http.get<any[]>(`${this.api}/disponibles`);
+    return this.http.get<Match[]>(`${this.api}/disponibles`);
   }
-  createMatch(dto: {
-    organisateur_matricule: string;
-    terrainID: number;
-    date: string;
-    estPublic: boolean;
-  }) {
-    return this.http.post(`${this.api}`, dto);
+
+  createMatch(dto: CreateMatchPayload) {
+    return this.http.post<Match>(`${this.api}`, dto);
   }
+
   getTerrains() {
     return this.http.get<Terrain[]>(`${this.api}/terrains`);
   }

@@ -16,6 +16,7 @@
             matInput
             placeholder="Matricule"
             name="matricule"
+            data-cy="login-matricule"
             [(ngModel)]="matricule"
             (ngModelChange)="onMatriculeChange()"
             (blur)="checkAdminPasswordStatus()"
@@ -41,7 +42,7 @@
           <p class="ux-alert error" aria-live="polite">{{ error }}</p>
         }
 
-        <button class="btn-primary" type="submit" [disabled]="loginLoading">
+        <button class="btn-primary" type="submit" [disabled]="loginLoading" data-cy="login-submit">
           {{ loginLoading ? 'Connexion...' : 'Se connecter' }}
         </button>
 

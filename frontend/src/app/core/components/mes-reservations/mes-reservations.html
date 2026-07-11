@@ -77,7 +77,7 @@
     <h3 class="section-title">À venir</h3>
 
     @for (r of reservationsAVenir(); track r.id) {
-      <mat-card class="match-card">
+      <mat-card class="match-card" data-cy="reservation-card">
 
         <mat-card-header>
           <mat-card-title>Match #{{ r.match.id }}</mat-card-title>
@@ -164,7 +164,7 @@
     <h3 class="section-title">Passées ou annulées</h3>
 
     @for (r of reservationsPasseesOuAnnulees(); track r.id) {
-      <mat-card class="match-card reservation-archivee">
+      <mat-card class="match-card reservation-archivee" data-cy="reservation-card">
 
         <mat-card-header>
           <mat-card-title>Match #{{ r.match.id }}</mat-card-title>

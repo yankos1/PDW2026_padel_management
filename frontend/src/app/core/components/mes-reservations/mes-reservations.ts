@@ -20,6 +20,7 @@ import { NotificationService } from '../../services/notification.service';
 import { ReservationService } from '../../services/reservation.service';
 import { getApiErrorMessage } from '../../utils/api-error.util';
 import { ConfirmationDialogComponent } from '../confirmation-dialog/confirmation-dialog.component';
+import { Reservation } from '../../models/reservation';
 
 @Component({
   selector: 'app-mes-reservations',
@@ -43,7 +44,7 @@ import { ConfirmationDialogComponent } from '../confirmation-dialog/confirmation
   styleUrl: './mes-reservations.css',
 })
 export class MesReservations {
-  reservations = signal<any[]>([]);
+  reservations = signal<Reservation[]>([]);
   loading = signal(false);
   error = signal<string | null>(null);
   payingReservationId = signal<number | null>(null);
@@ -93,7 +94,7 @@ export class MesReservations {
       });
   }
 
-  confirmerPaiement(reservation: any) {
+  confirmerPaiement(reservation: Reservation) {
     this.dialog.open(ConfirmationDialogComponent, {
       data: {
         title: 'Confirmer le paiement',
@@ -128,12 +129,19 @@ export class MesReservations {
       });
   }
 
-  ajouterJoueurMatchPrive(reservation: any) {
+  ajouterJoueurMatchPrive(reservation: Reservation) {
     const organisateurMatricule = this.authService.getMatricule();
-    const joueurMatricule = this.joueurMatricules[reservation.match.id]?.trim().toUpperCase();
+    const matchId = reservation.match?.id;
+
+    if (matchId === undefined) {
+      this.notificationService.error('Match introuvable pour cette reservation.');
+      return;
+    }
+
+    const joueurMatricule = this.joueurMatricules[matchId]?.trim().toUpperCase();
 
     if (!organisateurMatricule || !joueurMatricule) {
-      this.erreursAjout[reservation.match.id] = 'Matricule obligatoire';
+      this.erreursAjout[matchId] = 'Matricule obligatoire';
       return;
     }
 
@@ -141,37 +149,37 @@ export class MesReservations {
       return;
     }
 
-    this.erreursAjout[reservation.match.id] = '';
-    this.addingPlayerMatchId.set(reservation.match.id);
+    this.erreursAjout[matchId] = '';
+    this.addingPlayerMatchId.set(matchId);
 
     this.reservationService.ajouterJoueurMatchPrive({
       organisateurMatricule,
       joueurMatricule,
-      matchId: reservation.match.id,
+      matchId,
     }).pipe(finalize(() => this.addingPlayerMatchId.set(null))).subscribe({
       next: () => {
-        this.joueurMatricules[reservation.match.id] = '';
-        this.erreursAjout[reservation.match.id] = '';
+        this.joueurMatricules[matchId] = '';
+        this.erreursAjout[matchId] = '';
         this.notificationService.success('Le joueur a été ajouté au match privé.');
         this.loadReservations();
       },
       error: (err) => {
         const message = getApiErrorMessage(err, 'Erreur lors de l’ajout du joueur.');
-        this.erreursAjout[reservation.match.id] = message;
+        this.erreursAjout[matchId] = message;
         this.notificationService.error(message);
       },
     });
   }
 
-  reservationsAVenir(): any[] {
-    return this.filteredReservations().filter((reservation: any) => !this.reservationPasseeOuAnnulee(reservation));
+  reservationsAVenir(): Reservation[] {
+    return this.filteredReservations().filter((reservation) => !this.reservationPasseeOuAnnulee(reservation));
   }
 
-  reservationsPasseesOuAnnulees(): any[] {
-    return this.filteredReservations().filter((reservation: any) => this.reservationPasseeOuAnnulee(reservation));
+  reservationsPasseesOuAnnulees(): Reservation[] {
+    return this.filteredReservations().filter((reservation) => this.reservationPasseeOuAnnulee(reservation));
   }
 
-  filteredReservations(): any[] {
+  filteredReservations(): Reservation[] {
     const search = this.normalize(this.searchTerm);
 
     return this.reservations().filter((reservation) => {
@@ -202,7 +210,7 @@ export class MesReservations {
     this.typeFilter = '';
   }
 
-  reservationPasseeOuAnnulee(reservation: any): boolean {
+  reservationPasseeOuAnnulee(reservation: Reservation): boolean {
     const statutMatch = reservation.match?.statut;
 
     return (
@@ -213,7 +221,7 @@ export class MesReservations {
     );
   }
 
-  libelleStatut(reservation: any): string {
+  libelleStatut(reservation: Reservation): string {
     if (reservation.match?.statut === 'ANNULE' || reservation.statut === 'ANNULEE') {
       return 'Annulé';
     }
@@ -229,7 +237,7 @@ export class MesReservations {
     return 'À venir';
   }
 
-  statutClass(reservation: any): string {
+  statutClass(reservation: Reservation): string {
     const statut = this.libelleStatut(reservation);
     if (statut === 'Annulé') return 'error';
     if (statut === 'Terminé') return 'success';
@@ -237,27 +245,27 @@ export class MesReservations {
     return 'info';
   }
 
-  estPayee(reservation: any): boolean {
-    return reservation.paye === true || reservation.estPayee === true;
+  estPayee(reservation: Reservation): boolean {
+    return reservation.paye === true || reservation.estPayee;
   }
 
-  paiementClass(reservation: any): string {
+  paiementClass(reservation: Reservation): string {
     return this.estPayee(reservation) ? 'success' : 'warning';
   }
 
-  libelleTypeMatch(reservation: any): string {
+  libelleTypeMatch(reservation: Reservation): string {
     return reservation.match?.estPublic ? 'Match public' : 'Match privé';
   }
 
-  estResponsable(reservation: any): boolean {
+  estResponsable(reservation: Reservation): boolean {
     return this.authService.getMatricule() === reservation.match?.organisateurMatricule;
   }
 
-  placesRestantes(reservation: any): number {
+  placesRestantes(reservation: Reservation): number {
     return Math.max(0, 4 - (reservation.match?.nbParticipants ?? 0));
   }
 
-  peutAjouterJoueurPrive(reservation: any): boolean {
+  peutAjouterJoueurPrive(reservation: Reservation): boolean {
     return (
       this.estResponsable(reservation) &&
       reservation.match?.estPublic === false &&
@@ -282,7 +290,7 @@ export class MesReservations {
     return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value);
   }
 
-  private searchableReservationText(reservation: any): string {
+  private searchableReservationText(reservation: Reservation): string {
     return this.normalize([
       reservation.match?.site,
       reservation.match?.terrain,

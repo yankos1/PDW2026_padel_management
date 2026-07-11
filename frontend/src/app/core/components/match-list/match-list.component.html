@@ -44,7 +44,7 @@
   }
 
   @for (match of filteredMatchs(); track match.id) {
-    <mat-card class="match-card">
+    <mat-card class="match-card" data-cy="match-card">
 
       <mat-card-header>
         <mat-card-title>Match #{{ match.id }}</mat-card-title>

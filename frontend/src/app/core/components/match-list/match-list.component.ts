@@ -21,6 +21,7 @@ import { NotificationService } from '../../services/notification.service';
 import { ReservationService } from '../../services/reservation.service';
 import { getApiErrorMessage } from '../../utils/api-error.util';
 import { ConfirmationDialogComponent } from '../confirmation-dialog/confirmation-dialog.component';
+import { Match } from '../../models/match';
 
 @Component({
   selector: 'app-match-list',
@@ -44,8 +45,7 @@ import { ConfirmationDialogComponent } from '../confirmation-dialog/confirmation
   styleUrls: ['./match-list.component.css'],
 })
 export class MatchListComponent implements OnInit {
-  // TODO [IMPORTANT] Remplacer any par des interfaces TypeScript alignees sur les DTO backend.
-  matchs = signal<any[]>([]);
+  matchs = signal<Match[]>([]);
   error = signal<string | null>(null);
   loading = signal(false);
   joiningMatchId = signal<number | null>(null);
@@ -80,9 +80,9 @@ export class MatchListComponent implements OnInit {
       reservations: this.reservationService.getMesReservations(matricule),
     }).pipe(finalize(() => this.loading.set(false))).subscribe({
       next: ({ matchs, reservations }) => {
-        const matchReserveId = reservations.map((r: any) => r.match.id);
+        const matchReserveId = reservations.map((reservation) => reservation.match?.id);
         const matchFiltre = matchs.filter(
-          (m: any) => !matchReserveId.includes(m.id) && !this.matchDejaPasse(m),
+          (match) => !matchReserveId.includes(match.id) && !this.matchDejaPasse(match),
         );
 
         this.matchs.set(matchFiltre);
@@ -95,7 +95,7 @@ export class MatchListComponent implements OnInit {
     });
   }
 
-  rejoindreMatch(match: any) {
+  rejoindreMatch(match: Match) {
     const matricule = this.authService.getMatricule();
 
     if (!matricule) {
@@ -117,7 +117,6 @@ export class MatchListComponent implements OnInit {
 
     this.reservationService
       .rejoindreMatch({
-        matricule: matricule,
         matchId: match.id,
       })
       .pipe(finalize(() => this.joiningMatchId.set(null)))
@@ -132,7 +131,7 @@ export class MatchListComponent implements OnInit {
       });
   }
 
-  payerMatchPublic(match: any) {
+  payerMatchPublic(match: Match) {
     const matricule = this.authService.getMatricule();
     if (!matricule) {
       this.notificationService.warning('Vous devez être connecté pour réserver.');
@@ -151,8 +150,8 @@ export class MatchListComponent implements OnInit {
     this.error.set(null);
     this.joiningMatchId.set(match.id);
 
-    this.reservationService.rejoindreMatch({ matricule: matricule, matchId: match.id }).pipe(
-      switchMap((reservation: any) => this.reservationService.payerReservation(reservation.id)),
+    this.reservationService.rejoindreMatch({ matchId: match.id }).pipe(
+      switchMap((reservation) => this.reservationService.payerReservation(reservation.id)),
       finalize(() => this.joiningMatchId.set(null)),
     ).subscribe({
       next: () => {
@@ -166,7 +165,7 @@ export class MatchListComponent implements OnInit {
     });
   }
 
-  ouvrirPaiement(match: any) {
+  ouvrirPaiement(match: Match) {
     if (!this.peutReserver(match)) {
       this.notificationService.warning(this.raisonBlocageReservation(match) ?? 'Paiement impossible.');
       return;
@@ -185,11 +184,11 @@ export class MatchListComponent implements OnInit {
     });
   }
 
-  peutReserver(match: any): boolean {
+  peutReserver(match: Match): boolean {
     return this.raisonBlocageReservation(match) === null;
   }
 
-  raisonBlocageReservation(match: any): string | null {
+  raisonBlocageReservation(match: Match): string | null {
     if (this.matchDejaPasse(match)) {
       return 'Ce match est déjà passé';
     }
@@ -214,7 +213,7 @@ export class MatchListComponent implements OnInit {
     return null;
   }
 
-  filteredMatchs(): any[] {
+  filteredMatchs(): Match[] {
     const search = this.normalize(this.searchTerm);
 
     return this.matchs().filter((match) => {
@@ -249,8 +248,8 @@ export class MatchListComponent implements OnInit {
     return '';
   }
 
-  libelleTypeMatch(match: any): string {
-    return match.estPublic === false ? 'Privé' : 'Public';
+  libelleTypeMatch(match: Match): string {
+    return !match.estPublic ? 'Privé' : 'Public';
   }
 
   formatDate(value: string): string {
@@ -269,16 +268,14 @@ export class MatchListComponent implements OnInit {
     return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value);
   }
 
-  private searchableMatchText(match: any): string {
+  private searchableMatchText(match: Match): string {
     return this.normalize([
       match.site,
       match.terrain,
       match.terrainNom,
       this.formatDate(match.dateHeureDebut),
       this.formatTime(match.dateHeureDebut),
-      match.organisateur,
       match.organisateurMatricule,
-      match.matricule,
       this.libelleStatut(match.statut),
       match.statut,
       this.libelleTypeMatch(match),
@@ -289,7 +286,7 @@ export class MatchListComponent implements OnInit {
     return value.trim().toLocaleLowerCase('fr-FR');
   }
 
-  private matchDejaPasse(match: any): boolean {
+  private matchDejaPasse(match: Match): boolean {
     return new Date(match.dateHeureDebut).getTime() <= Date.now();
   }
 }

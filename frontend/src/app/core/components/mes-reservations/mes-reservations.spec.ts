@@ -1,6 +1,7 @@
 import { of, Subject, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { MesReservations } from './mes-reservations';
+import { Reservation } from '../../models/reservation';
 
 describe('MesReservations', () => {
   it('shows and hides the loader while reservations are loading', () => {
@@ -33,7 +34,7 @@ describe('MesReservations', () => {
         }))),
       },
     });
-    component.reservations.set([{ id: 1, match: { dateHeureDebut: futureDate() } }]);
+    component.reservations.set([reservationFixture({ id: 1, dateHeureDebut: futureDate() })]);
 
     component.loadReservations();
 
@@ -234,7 +235,7 @@ function dialogMock(confirmed: boolean) {
   };
 }
 
-function reservationFixture(overrides: any = {}) {
+function reservationFixture(overrides: any = {}): Reservation {
   return {
     id: overrides.id ?? 1,
     estPayee: overrides.estPayee ?? false,
@@ -247,6 +248,7 @@ function reservationFixture(overrides: any = {}) {
       statut: overrides.matchStatut ?? 'PLANIFIE',
       estPublic: overrides.estPublic ?? true,
       nbParticipants: overrides.nbParticipants ?? 2,
+      organisateurMatricule: overrides.organisateurMatricule ?? 'G0002',
     },
   };
 }

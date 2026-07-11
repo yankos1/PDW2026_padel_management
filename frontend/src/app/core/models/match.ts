@@ -1,8 +1,9 @@
-export type StatutMatch = 'PLANIFIE'| 'TERMINE'| 'ANNULE'| 'COMPLET'
+export type StatutMatch = 'PLANIFIE' | 'TERMINE' | 'ANNULE' | 'COMPLET';
 
 export interface Match {
   id: number;
-  terrainNom: string;
+  nbParticipants: number;
+  terrainNom?: string;
   terrain?: string;
   siteId?: number;
   site?: string;
@@ -10,4 +11,11 @@ export interface Match {
   organisateurMatricule: string;
   estPublic: boolean;
   statut: StatutMatch;
+}
+
+export interface CreateMatchPayload {
+  organisateur_matricule?: string;
+  terrainID: number;
+  date: string;
+  estPublic: boolean;
 }
