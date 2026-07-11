@@ -47,7 +47,6 @@ class AdminServiceTest {
 
     private AdminService adminService;
     private Site site;
-    private Terrain terrain;
 
     @BeforeEach
     void setup() {
@@ -59,7 +58,7 @@ class AdminServiceTest {
                 .heureFermeture(LocalTime.of(20, 0))
                 .jourFermeture(List.of())
                 .build();
-        terrain = Terrain.builder().id(10L).nom("T1").site(site).build();
+        Terrain terrain = Terrain.builder().id(10L).nom("T1").site(site).build();
         site.setTerrains(List.of(terrain));
 
         when(membreRepository.findById("G0001")).thenReturn(Optional.of(globalAdmin()));

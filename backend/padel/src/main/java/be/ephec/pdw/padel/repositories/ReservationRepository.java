@@ -5,6 +5,7 @@ import be.ephec.pdw.padel.model.Membre;
 import be.ephec.pdw.padel.model.Reservation;
 import be.ephec.pdw.padel.repositories.projections.MonthlyAmountProjection;
 import be.ephec.pdw.padel.repositories.projections.SiteRevenueProjection;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,8 +23,6 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
     boolean existsByMatchAndMembre(Match match, Membre membre);
 
     boolean existsByMatchAndMembreAndEstPayeeFalse(Match match, Membre membre);
-
-    long countByEstPayeeTrue();
 
     Long id(Long id);
 
@@ -45,8 +44,8 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
     Double sumPaidRevenue(
             @Param("dateDebut") LocalDateTime dateDebut,
             @Param("dateFin") LocalDateTime dateFin,
-            @Param("siteId") Long siteId,
-            @Param("terrainId") Long terrainId
+            @Param("siteId") @Nullable Long siteId,
+            @Param("terrainId") @Nullable Long terrainId
     );
 
     @Query("""
@@ -61,8 +60,8 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
     long countConfirmedReservations(
             @Param("dateDebut") LocalDateTime dateDebut,
             @Param("dateFin") LocalDateTime dateFin,
-            @Param("siteId") Long siteId,
-            @Param("terrainId") Long terrainId
+            @Param("siteId") @Nullable Long siteId,
+            @Param("terrainId") @Nullable Long terrainId
     );
 
     @Query("""
@@ -77,8 +76,8 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
     long countValidReservationsForFillRate(
             @Param("dateDebut") LocalDateTime dateDebut,
             @Param("dateFin") LocalDateTime dateFin,
-            @Param("siteId") Long siteId,
-            @Param("terrainId") Long terrainId
+            @Param("siteId") @Nullable Long siteId,
+            @Param("terrainId") @Nullable Long terrainId
     );
 
     @Query("""
@@ -93,8 +92,8 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
     long countActiveMembers(
             @Param("dateDebut") LocalDateTime dateDebut,
             @Param("dateFin") LocalDateTime dateFin,
-            @Param("siteId") Long siteId,
-            @Param("terrainId") Long terrainId
+            @Param("siteId") @Nullable Long siteId,
+            @Param("terrainId") @Nullable Long terrainId
     );
 
     @Query("""
@@ -113,8 +112,8 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
     List<MonthlyAmountProjection> sumRevenueByMonth(
             @Param("dateDebut") LocalDateTime dateDebut,
             @Param("dateFin") LocalDateTime dateFin,
-            @Param("siteId") Long siteId,
-            @Param("terrainId") Long terrainId
+            @Param("siteId") @Nullable Long siteId,
+            @Param("terrainId") @Nullable Long terrainId
     );
 
     @Query("""
@@ -126,5 +125,5 @@ public interface ReservationRepository extends JpaRepository<Reservation,Long> {
             group by r.match.terrain.site.name
             order by r.match.terrain.site.name
             """)
-    List<SiteRevenueProjection> sumRevenueBySite(@Param("siteId") Long siteId);
+    List<SiteRevenueProjection> sumRevenueBySite(@Param("siteId") @Nullable Long siteId);
 }

@@ -1,12 +1,12 @@
 package be.ephec.pdw.padel.repositories;
 
 import be.ephec.pdw.padel.model.Match;
-import be.ephec.pdw.padel.model.StatutMatch;
 import be.ephec.pdw.padel.model.Terrain;
 import be.ephec.pdw.padel.repositories.projections.IncompleteMatchProjection;
 import be.ephec.pdw.padel.repositories.projections.MatchStatusStatsProjection;
 import be.ephec.pdw.padel.repositories.projections.MonthlyCountProjection;
 import be.ephec.pdw.padel.repositories.projections.TerrainStatsProjection;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,15 +19,7 @@ public interface MatchRepository extends JpaRepository<Match,Long> {
 
     List<Match> findByTerrain(Terrain terrain);
 
-    List<Match> findByDateHeureDebut(LocalDateTime dateHeureDebut);
-
-    List<Match> findByStatut(StatutMatch statut);
-
-    List<Match> findByStatutAndEstPublic(StatutMatch statut, boolean estPublic);
-
     boolean existsByTerrainAndDateHeureDebut(Terrain terrain, LocalDateTime dateHeureDebut);
-
-    long countByStatut(StatutMatch statutMatch);
 
     @Query("""
             select count(m)
@@ -40,8 +32,8 @@ public interface MatchRepository extends JpaRepository<Match,Long> {
     long countDashboardMatches(
             @Param("dateDebut") LocalDateTime dateDebut,
             @Param("dateFin") LocalDateTime dateFin,
-            @Param("siteId") Long siteId,
-            @Param("terrainId") Long terrainId
+            @Param("siteId") @Nullable Long siteId,
+            @Param("terrainId") @Nullable Long terrainId
     );
 
     @Query("""
@@ -56,8 +48,8 @@ public interface MatchRepository extends JpaRepository<Match,Long> {
     long countCancelledMatches(
             @Param("dateDebut") LocalDateTime dateDebut,
             @Param("dateFin") LocalDateTime dateFin,
-            @Param("siteId") Long siteId,
-            @Param("terrainId") Long terrainId
+            @Param("siteId") @Nullable Long siteId,
+            @Param("terrainId") @Nullable Long terrainId
     );
 
     @Query("""
@@ -72,8 +64,8 @@ public interface MatchRepository extends JpaRepository<Match,Long> {
     long countUsedSlots(
             @Param("dateDebut") LocalDateTime dateDebut,
             @Param("dateFin") LocalDateTime dateFin,
-            @Param("siteId") Long siteId,
-            @Param("terrainId") Long terrainId
+            @Param("siteId") @Nullable Long siteId,
+            @Param("terrainId") @Nullable Long terrainId
     );
 
     @Query("""
@@ -91,8 +83,8 @@ public interface MatchRepository extends JpaRepository<Match,Long> {
     List<MonthlyCountProjection> countMatchesByMonth(
             @Param("dateDebut") LocalDateTime dateDebut,
             @Param("dateFin") LocalDateTime dateFin,
-            @Param("siteId") Long siteId,
-            @Param("terrainId") Long terrainId
+            @Param("siteId") @Nullable Long siteId,
+            @Param("terrainId") @Nullable Long terrainId
     );
 
     @Query("""
@@ -108,8 +100,8 @@ public interface MatchRepository extends JpaRepository<Match,Long> {
     List<MatchStatusStatsProjection> countMatchesByStatus(
             @Param("dateDebut") LocalDateTime dateDebut,
             @Param("dateFin") LocalDateTime dateFin,
-            @Param("siteId") Long siteId,
-            @Param("terrainId") Long terrainId
+            @Param("siteId") @Nullable Long siteId,
+            @Param("terrainId") @Nullable Long terrainId
     );
 
     @Query("""
@@ -133,8 +125,8 @@ public interface MatchRepository extends JpaRepository<Match,Long> {
     List<TerrainStatsProjection> terrainStatistics(
             @Param("dateDebut") LocalDateTime dateDebut,
             @Param("dateFin") LocalDateTime dateFin,
-            @Param("siteId") Long siteId,
-            @Param("terrainId") Long terrainId
+            @Param("siteId") @Nullable Long siteId,
+            @Param("terrainId") @Nullable Long terrainId
     );
 
     @Query("""
@@ -159,7 +151,7 @@ public interface MatchRepository extends JpaRepository<Match,Long> {
             """)
     List<IncompleteMatchProjection> upcomingIncompleteMatches(
             @Param("maintenant") LocalDateTime maintenant,
-            @Param("siteId") Long siteId,
-            @Param("terrainId") Long terrainId
+            @Param("siteId") @Nullable Long siteId,
+            @Param("terrainId") @Nullable Long terrainId
     );
 }

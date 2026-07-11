@@ -1,6 +1,7 @@
 package be.ephec.pdw.padel.repositories;
 
 import be.ephec.pdw.padel.model.Terrain;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,7 +17,7 @@ public interface TerrainRepository extends JpaRepository<Terrain,Long> {
             where (:siteId is null or t.site.id = :siteId)
               and (:terrainId is null or t.id = :terrainId)
             """)
-    long countAccessibleTerrains(@Param("siteId") Long siteId, @Param("terrainId") Long terrainId);
+    long countAccessibleTerrains(@Param("siteId") @Nullable Long siteId, @Param("terrainId") @Nullable Long terrainId);
 
     @Query("""
             select t
@@ -24,5 +25,5 @@ public interface TerrainRepository extends JpaRepository<Terrain,Long> {
             where (:siteId is null or t.site.id = :siteId)
             order by t.site.name, t.nom
             """)
-    List<Terrain> findAccessibleTerrains(@Param("siteId") Long siteId);
+    List<Terrain> findAccessibleTerrains(@Param("siteId") @Nullable Long siteId);
 }

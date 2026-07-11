@@ -21,6 +21,7 @@ import be.ephec.pdw.padel.repositories.SiteRepository;
 import be.ephec.pdw.padel.repositories.TerrainRepository;
 import be.ephec.pdw.padel.repositories.projections.IncompleteMatchProjection;
 import be.ephec.pdw.padel.repositories.projections.MonthlyAmountProjection;
+import be.ephec.pdw.padel.repositories.projections.SiteRevenueProjection;
 import be.ephec.pdw.padel.repositories.projections.TerrainStatsProjection;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -98,7 +99,7 @@ public class AdminService {
         Long siteId = restrictedSiteId(admin, null);
         return reservationRepository.sumRevenueBySite(siteId).stream()
                 .collect(Collectors.toMap(
-                        projection -> projection.getSiteNom(),
+                        SiteRevenueProjection::getSiteNom,
                         projection -> zeroIfNull(projection.getMontant()).doubleValue()
                 ));
     }
