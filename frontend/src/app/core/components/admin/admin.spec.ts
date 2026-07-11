@@ -1,64 +1,74 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { of, Subject, throwError } from 'rxjs';
 import { vi } from 'vitest';
+import { AdminDashboard } from '../../models/admin-dashboard';
+import { AdminService } from '../../services/admin.service';
+import { AuthService } from '../../services/auth.service';
+import { NotificationService } from '../../services/notification.service';
 import { Admin } from './admin';
 
 describe('Admin', () => {
-  it('does not replace an unavailable stat with zero', () => {
+  it('does not replace an unavailable dashboard with empty values', () => {
     const adminService = adminServiceMock({
-      getMatchs: vi.fn().mockReturnValue(throwError(() => backendError('Dashboard indisponible'))),
+      getDashboard: vi.fn().mockReturnValue(throwError(() => backendError('Dashboard indisponible'))),
     });
-    const component = new Admin(adminService as any, authServiceMock() as any, cdrMock() as any);
+    const notificationService = notificationServiceMock();
+    const component = new Admin(adminService, authServiceMock(), notificationService);
 
     component.ngOnInit();
 
-    expect(component.matchs).toBeNull();
-    expect(component.statErrors.matchs).toBe('Dashboard indisponible');
+    expect(component.dashboard).toBeNull();
+    expect(component.error).toBe('Dashboard indisponible');
+    expect(notificationService.error).toHaveBeenCalledWith('Dashboard indisponible');
   });
 
   it('keeps previous dashboard values when a reload fails', () => {
     const adminService = adminServiceMock({
-      getCA: vi.fn().mockReturnValue(throwError(() => backendError('CA indisponible'))),
+      getDashboard: vi.fn().mockReturnValue(throwError(() => backendError('Dashboard indisponible'))),
     });
-    const component = new Admin(adminService as any, authServiceMock() as any, cdrMock() as any);
-    component.ca = 300;
+    const component = new Admin(adminService, authServiceMock(), notificationServiceMock());
+    component.dashboard = dashboardFixture({ nombreMatchs: 4 });
 
-    component.retryStat('ca');
+    component.loadDashboard();
 
-    expect(component.ca).toBe(300);
-    expect(component.statErrors.ca).toBe('CA indisponible');
+    expect(component.dashboard?.resume.nombreMatchs).toBe(4);
+    expect(component.error).toBe('Dashboard indisponible');
   });
 
-  it('tracks loading for an individual stat', () => {
-    const matchs$ = new Subject<number>();
+  it('tracks dashboard loading', () => {
+    const dashboard$ = new Subject<AdminDashboard>();
     const adminService = adminServiceMock({
-      getMatchs: vi.fn().mockReturnValue(matchs$),
+      getDashboard: vi.fn().mockReturnValue(dashboard$),
     });
-    const component = new Admin(adminService as any, authServiceMock() as any, cdrMock() as any);
+    const component = new Admin(adminService, authServiceMock(), notificationServiceMock());
 
-    component.retryStat('matchs');
+    component.loadDashboard();
 
-    expect(component.loadingStats.matchs).toBe(true);
+    expect(component.loadingDashboard).toBe(true);
 
-    matchs$.next(4);
-    matchs$.complete();
+    dashboard$.next(dashboardFixture({ nombreMatchs: 6 }));
+    dashboard$.complete();
 
-    expect(component.loadingStats.matchs).toBe(false);
-    expect(component.matchs).toBe(4);
+    expect(component.loadingDashboard).toBe(false);
+    expect(component.dashboard?.resume.nombreMatchs).toBe(6);
   });
 
-  it('retry relaunches only the requested stat', () => {
+  it('reloads terrains and dashboard when global admin changes site', () => {
     const adminService = adminServiceMock();
-    const component = new Admin(adminService as any, authServiceMock() as any, cdrMock() as any);
+    const component = new Admin(adminService, authServiceMock(), notificationServiceMock());
+    component.filters.siteId = 2;
+    component.filters.terrainId = 10;
 
-    component.retryStat('terrains');
+    component.onSiteChange();
 
-    expect(adminService.getTerrains).toHaveBeenCalledTimes(1);
-    expect(adminService.getMatchs).not.toHaveBeenCalled();
+    expect(component.filters.terrainId).toBeUndefined();
+    expect(adminService.getTerrainsAccessibles).toHaveBeenCalledWith(2);
+    expect(adminService.getDashboard).toHaveBeenCalled();
   });
+
 });
 
-function adminServiceMock(overrides: Partial<Record<string, any>> = {}) {
+function adminServiceMock(overrides: Partial<AdminService> = {}): AdminService {
   return {
     getMatchs: vi.fn().mockReturnValue(of(2)),
     getCA: vi.fn().mockReturnValue(of(150)),
@@ -66,20 +76,23 @@ function adminServiceMock(overrides: Partial<Record<string, any>> = {}) {
     getTerrains: vi.fn().mockReturnValue(of(3)),
     getTauxRemplissage: vi.fn().mockReturnValue(of(75)),
     getRevenusParSite: vi.fn().mockReturnValue(of({ Bruxelles: 150 })),
-    getSites: vi.fn().mockReturnValue(of([{ id: 1, name: 'Bruxelles' }])),
+    getSites: vi.fn().mockReturnValue(of([{ id: 1, name: 'Bruxelles', heureOuverture: '08:00', heureFermeture: '20:00' }])),
+    getTerrainsAccessibles: vi.fn().mockReturnValue(of([{ id: 10, nom: 'T1', heureOuverture: '08:00', heureFermeture: '20:00' }])),
+    getDashboard: vi.fn().mockReturnValue(of(dashboardFixture())),
     ...overrides,
-  };
+  } as unknown as AdminService;
 }
 
-function authServiceMock() {
+function authServiceMock(): AuthService {
   return {
     isAdmin: vi.fn().mockReturnValue(true),
+    isAdminGlobal: vi.fn().mockReturnValue(true),
     getMatricule: vi.fn().mockReturnValue('G0001'),
-  };
+  } as unknown as AuthService;
 }
 
-function cdrMock() {
-  return { detectChanges: vi.fn() };
+function notificationServiceMock(): NotificationService {
+  return { error: vi.fn() } as unknown as NotificationService;
 }
 
 function backendError(message: string): HttpErrorResponse {
@@ -92,4 +105,27 @@ function backendError(message: string): HttpErrorResponse {
       fieldErrors: {},
     },
   });
+}
+
+function dashboardFixture(summary: Partial<AdminDashboard['resume']> = {}): AdminDashboard {
+  return {
+    resume: {
+      chiffreAffaires: 150,
+      nombreMatchs: 2,
+      reservationsConfirmees: 3,
+      tauxRemplissageMatchs: 50,
+      tauxOccupationTerrains: 10,
+      soldesDus: 20,
+      membresActifs: 4,
+      matchsAnnules: 1,
+      matchsProchainsIncomplets: 1,
+      ...summary,
+    },
+    chiffreAffairesParMois: [],
+    matchsParMois: [],
+    tauxRemplissageParTerrain: [],
+    repartitionMatchsParStatut: [],
+    terrainsLesPlusUtilises: [],
+    prochainsMatchsIncomplets: [],
+  };
 }

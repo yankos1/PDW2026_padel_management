@@ -1,167 +1,231 @@
-<h2 class="title">Dashboard Admin</h2>
-
-<div class="match-container">
+<section class="admin-dashboard">
+  <header class="dashboard-header">
+    <div>
+      <h2>Dashboard Admin</h2>
+      <p>Statistiques filtrables par periode, site et terrain</p>
+    </div>
+    <button mat-raised-button color="primary" type="button" (click)="loadDashboard()" [disabled]="loadingDashboard">
+      Actualiser
+    </button>
+  </header>
 
   @if (error) {
     <p class="ux-alert error" aria-live="polite">{{ error }}</p>
   }
 
   @if (!error) {
-    <mat-card class="match-card">
-      <mat-card-header>
-        <mat-card-title>Statistiques générales</mat-card-title>
-        <mat-card-subtitle>Vue d'ensemble de l'activité</mat-card-subtitle>
-      </mat-card-header>
-
+    <mat-card class="filters-panel">
       <mat-card-content>
-        <p>
-          Matchs :
-          @if (loadingStats.matchs) {
-            <span>Chargement...</span>
-          } @else if (statErrors.matchs) {
-            <span class="field-error">{{ statErrors.matchs }}</span>
-            <button mat-button type="button" (click)="retryStat('matchs')">Réessayer</button>
-          } @else if (matchs !== null) {
-            <strong>{{ matchs }}</strong>
-          } @else {
-            <span>Aucune donnée disponible.</span>
-          }
-        </p>
+        <div class="filters-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Date debut</mat-label>
+            <input matInput type="date" name="dateDebut" [(ngModel)]="filters.dateDebut">
+          </mat-form-field>
 
-        <p>
-          Chiffre d'affaires :
-          @if (loadingStats.ca) {
-            <span>Chargement...</span>
-          } @else if (statErrors.ca) {
-            <span class="field-error">{{ statErrors.ca }}</span>
-            <button mat-button type="button" (click)="retryStat('ca')">Réessayer</button>
-          } @else if (ca !== null) {
-            <strong>{{ formatMontant(ca) }}</strong>
-          } @else {
-            <span>Aucune donnée disponible.</span>
-          }
-        </p>
+          <mat-form-field appearance="outline">
+            <mat-label>Date fin</mat-label>
+            <input matInput type="date" name="dateFin" [(ngModel)]="filters.dateFin">
+          </mat-form-field>
 
-        <p>
-          Membres :
-          @if (loadingStats.membres) {
-            <span>Chargement...</span>
-          } @else if (statErrors.membres) {
-            <span class="field-error">{{ statErrors.membres }}</span>
-            <button mat-button type="button" (click)="retryStat('membres')">Réessayer</button>
-          } @else if (membres !== null) {
-            <strong>{{ membres }}</strong>
-          } @else {
-            <span>Aucune donnée disponible.</span>
+          @if (authService.isAdminGlobal()) {
+            <mat-form-field appearance="outline">
+              <mat-label>Site</mat-label>
+              <mat-select name="siteId" [(ngModel)]="filters.siteId" (selectionChange)="onSiteChange()">
+                <mat-option [value]="undefined">Tous les sites</mat-option>
+                @for (site of sites; track site.id) {
+                  <mat-option [value]="site.id">{{ site.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
           }
-        </p>
 
-        <p>
-          Terrains :
-          @if (loadingStats.terrains) {
-            <span>Chargement...</span>
-          } @else if (statErrors.terrains) {
-            <span class="field-error">{{ statErrors.terrains }}</span>
-            <button mat-button type="button" (click)="retryStat('terrains')">Réessayer</button>
-          } @else if (terrains !== null) {
-            <strong>{{ terrains }}</strong>
-          } @else {
-            <span>Aucune donnée disponible.</span>
-          }
-        </p>
+          <mat-form-field appearance="outline">
+            <mat-label>Terrain</mat-label>
+            <mat-select name="terrainId" [(ngModel)]="filters.terrainId" [disabled]="loadingTerrains">
+              <mat-option [value]="undefined">Tous les terrains</mat-option>
+              @for (terrain of terrains; track terrain.id) {
+                <mat-option [value]="terrain.id">{{ terrain.nom }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
 
-        <p>
-          Taux de remplissage :
-          @if (loadingStats.taux) {
-            <span>Chargement...</span>
-          } @else if (statErrors.taux) {
-            <span class="field-error">{{ statErrors.taux }}</span>
-            <button mat-button type="button" (click)="retryStat('taux')">Réessayer</button>
-          } @else if (taux !== null) {
-            <strong>{{ taux | number:'1.0-2' }} %</strong>
-          } @else {
-            <span>Aucune donnée disponible.</span>
-          }
-        </p>
+        <div class="filter-actions">
+          <button mat-raised-button color="primary" type="button" (click)="applyFilters()" [disabled]="loadingDashboard">
+            Appliquer
+          </button>
+          <button mat-button type="button" (click)="resetFilters()" [disabled]="loadingDashboard">
+            Reinitialiser
+          </button>
+        </div>
       </mat-card-content>
     </mat-card>
 
-    @if (loadingSites || loadingRevenus) {
-      <p class="ux-state" aria-live="polite">Chargement des statistiques par site...</p>
+    @if (loadingDashboard && !dashboard) {
+      <p class="ux-state" aria-live="polite">Chargement du dashboard...</p>
     }
 
-    @if (sitesError) {
-      <p class="ux-alert error" aria-live="polite">{{ sitesError }}</p>
-      <p class="match-count">
-        <button mat-raised-button color="primary" type="button" (click)="loadSites()" [disabled]="loadingSites">
-          Réessayer
-        </button>
-      </p>
-    }
+    @if (dashboard) {
+      <section class="summary-grid" aria-label="Indicateurs principaux">
+        <mat-card class="summary-card">
+          <mat-card-content>
+            <span>Chiffre d'affaires</span>
+            <strong>{{ formatMontant(dashboard.resume.chiffreAffaires) }}</strong>
+          </mat-card-content>
+        </mat-card>
 
-    @if (revenusError) {
-      <p class="ux-alert error" aria-live="polite">{{ revenusError }}</p>
-      <p class="match-count">
-        <button mat-raised-button color="primary" type="button" (click)="loadRevenus()" [disabled]="loadingRevenus">
-          Réessayer
-        </button>
-      </p>
-    }
+        <mat-card class="summary-card">
+          <mat-card-content>
+            <span>Matchs</span>
+            <strong>{{ dashboard.resume.nombreMatchs }}</strong>
+          </mat-card-content>
+        </mat-card>
 
-    @if (!loadingSites && !sitesError && sites.length === 0) {
-      <p class="ux-state">Aucun site disponible pour les statistiques.</p>
-    }
+        <mat-card class="summary-card">
+          <mat-card-content>
+            <span>Remplissage</span>
+            <strong>{{ dashboard.resume.tauxRemplissageMatchs | number:'1.0-2' }} %</strong>
+          </mat-card-content>
+        </mat-card>
 
-    @if (!loadingSites && !sitesError && sites.length > 0) {
-      <div class="filters-panel" aria-label="Filtre des sites">
-        <mat-form-field appearance="outline">
-          <mat-label>Rechercher un site</mat-label>
-          <input
-            matInput
-            type="search"
-            name="siteSearch"
-            [(ngModel)]="siteSearchTerm"
-            placeholder="Nom du site"
-          >
-        </mat-form-field>
-      </div>
+        <mat-card class="summary-card">
+          <mat-card-content>
+            <span>Occupation terrains</span>
+            <strong>{{ dashboard.resume.tauxOccupationTerrains | number:'1.0-2' }} %</strong>
+            <small class="occupation-help">Le taux d’occupation correspond au nombre de créneaux réservés par rapport au nombre total de créneaux disponibles sur la période sélectionnée.</small>
+          </mat-card-content>
+        </mat-card>
 
-      @if (hasSiteSearch()) {
-        <div class="filter-actions">
-          <button mat-button type="button" (click)="resetSiteSearch()">Réinitialiser les filtres</button>
-        </div>
+        <mat-card class="summary-card">
+          <mat-card-content>
+            <span>Soldes dus</span>
+            <strong>{{ formatMontant(dashboard.resume.soldesDus) }}</strong>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="summary-card">
+          <mat-card-content>
+            <span>Membres actifs</span>
+            <strong>{{ dashboard.resume.membresActifs }}</strong>
+          </mat-card-content>
+        </mat-card>
+      </section>
+
+      @if (!hasData()) {
+        <p class="ux-state">Aucune donnee disponible pour les filtres selectionnes.</p>
       }
-    }
 
-    @if (!loadingSites && !sitesError && sites.length > 0 && filteredSites().length === 0) {
-      <p class="ux-state">Aucun résultat ne correspond à votre recherche.</p>
-    }
-
-    @for (site of filteredSites(); track site.id) {
-      <mat-card class="match-card">
-
-        <mat-card-header>
-          <mat-card-title>{{ site.name }}</mat-card-title>
-          <mat-card-subtitle>Revenus du site</mat-card-subtitle>
-        </mat-card-header>
-
-        <mat-card-content>
-          <p>
-            Montant :
-            @if (loadingRevenus) {
-              <span>Chargement...</span>
-            } @else if (revenusError) {
-              <span class="field-error">Donnée indisponible</span>
-            } @else if (revenus !== null && revenus[site.name] !== undefined) {
-              <strong>{{ formatMontant(revenus[site.name]) }}</strong>
-            } @else {
-              <span>Aucune donnée disponible pour cette période.</span>
+      <section class="dashboard-grid">
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>Chiffre d'affaires par mois</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            @if (dashboard.chiffreAffairesParMois.length === 0) {
+              <p class="empty">Aucune donnee disponible.</p>
             }
-          </p>
-        </mat-card-content>
+            @for (period of dashboard.chiffreAffairesParMois; track trackPeriod($index, period)) {
+              <div class="bar-row">
+                <span>{{ formatMonth(period) }}</span>
+                <div class="bar-track"><div class="bar-fill revenue" [style.width]="barWidth(period.montant, maxMonthlyRevenue())"></div></div>
+                <strong>{{ formatMontant(period.montant) }}</strong>
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
 
-      </mat-card>
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>Matchs par mois</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            @if (dashboard.matchsParMois.length === 0) {
+              <p class="empty">Aucune donnee disponible.</p>
+            }
+            @for (period of dashboard.matchsParMois; track trackMatchPeriod($index, period)) {
+              <div class="bar-row">
+                <span>{{ formatMonth(period) }}</span>
+                <div class="bar-track"><div class="bar-fill matches" [style.width]="barWidth(period.nombre, maxMonthlyMatches())"></div></div>
+                <strong>{{ period.nombre }}</strong>
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>Remplissage par terrain</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            @if (dashboard.tauxRemplissageParTerrain.length === 0) {
+              <p class="empty">Aucune donnee disponible.</p>
+            }
+            @for (terrain of dashboard.tauxRemplissageParTerrain; track trackTerrain($index, terrain)) {
+              <div class="bar-row">
+                <span>{{ terrain.terrainNom }}</span>
+                <div class="bar-track"><div class="bar-fill fill" [style.width]="barWidth(terrain.tauxRemplissage, 100)"></div></div>
+                <strong>{{ terrain.tauxRemplissage | number:'1.0-2' }} %</strong>
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>Repartition par statut</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            @if (dashboard.repartitionMatchsParStatut.length === 0) {
+              <p class="empty">Aucune donnee disponible.</p>
+            }
+            @for (status of dashboard.repartitionMatchsParStatut; track trackStatus($index, status)) {
+              <div class="simple-row">
+                <span>{{ status.statut }}</span>
+                <strong>{{ status.nombre }}</strong>
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>Terrains les plus utilises</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            @if (dashboard.terrainsLesPlusUtilises.length === 0) {
+              <p class="empty">Aucune donnee disponible.</p>
+            }
+            @for (terrain of dashboard.terrainsLesPlusUtilises; track trackTerrain($index, terrain)) {
+              <div class="bar-row">
+                <span>{{ terrain.terrainNom }}</span>
+                <div class="bar-track"><div class="bar-fill usage" [style.width]="barWidth(terrain.nombreMatchs, maxTerrainUsage())"></div></div>
+                <strong>{{ terrain.nombreMatchs }}</strong>
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card>
+          <mat-card-header>
+            <mat-card-title>Prochains matchs incomplets</mat-card-title>
+            <mat-card-subtitle>{{ dashboard.resume.matchsProchainsIncomplets }} match(s)</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            @if (dashboard.prochainsMatchsIncomplets.length === 0) {
+              <p class="empty">Aucun match incomplet.</p>
+            }
+            @for (match of dashboard.prochainsMatchsIncomplets; track trackMatch($index, match)) {
+              <div class="match-row">
+                <div>
+                  <strong>{{ match.dateHeureDebut | date:'dd/MM/yyyy HH:mm' }}</strong>
+                  <span>{{ match.siteNom }} - {{ match.terrainNom }}</span>
+                </div>
+                <span>{{ match.participants }}/4</span>
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+      </section>
     }
   }
-
-</div>
+</section>
