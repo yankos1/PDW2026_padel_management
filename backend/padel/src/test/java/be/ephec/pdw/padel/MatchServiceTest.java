@@ -13,6 +13,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -25,7 +26,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("MatchService")
-// TODO [IMPORTANT][TEST] Completer les tests MatchService sur paiement, penalite, passage prive vers public et double reservation concurrente.
+// TODO [FACULTATIF][TEST INTEGRATION] Tester la double réservation concurrente
 class MatchServiceTest {
 
     @Mock private MembreRepository membreRepository;
@@ -73,7 +74,15 @@ class MatchServiceTest {
 
             assertNotNull(result);
             verify(matchRepository).save(any());
-            verify(reservationRepository).save(any());
+            ArgumentCaptor<Reservation> reservationCaptor = ArgumentCaptor.forClass(Reservation.class);
+            verify(reservationRepository).save(reservationCaptor.capture());
+
+            Reservation reservation = reservationCaptor.getValue();
+            assertEquals(result, reservation.getMatch());
+            assertEquals(membre, reservation.getMembre());
+            assertEquals(StatutReservation.CONFIRMEE, reservation.getStatut());
+            assertFalse(reservation.isEstPayee());
+            assertEquals(0, reservation.getMontant());
         }
 
         @Test
@@ -275,6 +284,22 @@ class MatchServiceTest {
 
             assertTrue(membre.isPenaliteActive());
             assertNotNull(membre.getFinPenalite());
+            verify(membreRepository).save(membre);
+        }
+
+        @Test
+        void shouldSetOrganizerDebtForUnpaidPlacesWhenMatchStartsIncomplete() {
+            Match match = new Match();
+            match.setEstPublic(true);
+            match.setDateHeureDebut(LocalDateTime.now().minusMinutes(1));
+            match.setOrganisateur(membre);
+
+            when(reservationRepository.countByMatchAndEstPayeeTrue(match)).thenReturn(2L);
+
+            matchService.mettreAJourEtatMatch(match);
+
+            assertTrue(membre.isPenaliteActive());
+            assertEquals(30, membre.getSoldeDu());
             verify(membreRepository).save(membre);
         }
     }
