@@ -26,25 +26,6 @@
           placeholder="Site, terrain, date, statut..."
         >
       </mat-form-field>
-
-      <mat-form-field appearance="outline">
-        <mat-label>Statut</mat-label>
-        <mat-select [(ngModel)]="statutFilter" name="matchStatusFilter">
-          <mat-option value="">Tous les statuts</mat-option>
-          @for (statut of statusOptions(); track statut) {
-            <mat-option [value]="statut">{{ libelleStatut(statut) }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-
-      <mat-form-field appearance="outline">
-        <mat-label>Type</mat-label>
-        <mat-select [(ngModel)]="typeFilter" name="matchTypeFilter">
-          <mat-option value="">Tous les types</mat-option>
-          <mat-option value="PUBLIC">Public</mat-option>
-          <mat-option value="PRIVE">Privé</mat-option>
-        </mat-select>
-      </mat-form-field>
     </div>
 
     @if (hasActiveFilters()) {

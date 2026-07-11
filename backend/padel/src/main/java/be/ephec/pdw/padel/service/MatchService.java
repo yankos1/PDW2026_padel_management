@@ -80,17 +80,14 @@ public class MatchService {
     public List<MatchReponseDTO> matchsDisponibles(){
 
         LocalDateTime maintenant = LocalDateTime.now();
-        List<Match> matchs = matchRepository.findAll()
-                .stream()
-                .filter(m -> m.getDateHeureDebut() != null)
-                .filter(m -> m.getDateHeureDebut().isAfter(maintenant))
-                .toList();
+        List<Match> matchs = matchRepository.findDisponiblesCandidates(maintenant);
+        matchs.forEach(match -> synchroniserStatut(match, maintenant));
 
         log.info("Nombre de matchs trouvés: {}", matchs.size());
 
         return matchs.stream()
                 .filter(this::matchAffichable)
-                .filter(m -> m.getStatut() != StatutMatch.ANNULE)
+                .filter(m -> m.getStatut() == StatutMatch.PLANIFIE)
                 .filter(m -> estVisibleCommeMatchPublic(m, maintenant))
                 .filter(m -> nombreParticipantsVisibles(m) < NOMBRE_JOUEURS_REQUIS)
                 .map(m -> toMatchReponseDTO(m, estVisibleCommeMatchPublic(m, maintenant)))
@@ -161,6 +158,10 @@ public class MatchService {
      */
     @Transactional
     public void mettreAJourEtatMatch(Match match, Long reservationEnCoursPaiementId){
+        if (match.getStatut() == StatutMatch.ANNULE) {
+            return;
+        }
+
         long nbJoueursPayes = reservationRepository.countByMatchAndEstPayeeTrue(match);
         long nbJoueursNonPayes = reservationRepository.countByMatchAndEstPayeeFalse(match);
         LocalDateTime veille = match.getDateHeureDebut().minusDays(1);
@@ -208,6 +209,54 @@ public class MatchService {
                 membreRepository.save(organisateur);
             }
         }
+
+        synchroniserStatut(match, maintenant, nbJoueursPayes);
+    }
+
+    @Transactional
+    public void synchroniserStatut(Match match) {
+        synchroniserStatut(match, LocalDateTime.now());
+    }
+
+    @Transactional
+    public void synchroniserStatutsPourDashboard(LocalDateTime dateDebut, LocalDateTime dateFin, Long siteId, Long terrainId) {
+        LocalDateTime maintenant = LocalDateTime.now();
+        matchRepository.findMatchesForStatusSynchronization(dateDebut, dateFin, siteId, terrainId)
+                .forEach(match -> synchroniserStatut(match, maintenant));
+    }
+
+    private void synchroniserStatut(Match match, LocalDateTime maintenant) {
+        if (match.getStatut() == StatutMatch.ANNULE) {
+            return;
+        }
+
+        long nbJoueursPayes = reservationRepository.countByMatchAndEstPayeeTrue(match);
+        synchroniserStatut(match, maintenant, nbJoueursPayes);
+    }
+
+    private void synchroniserStatut(Match match, LocalDateTime maintenant, long nbJoueursPayes) {
+        StatutMatch statut = determinerStatut(match, maintenant, nbJoueursPayes);
+        if (match.getStatut() != statut) {
+            match.setStatut(statut);
+            matchRepository.save(match);
+        }
+    }
+
+    private StatutMatch determinerStatut(Match match, LocalDateTime maintenant, long nbJoueursPayes) {
+        if (match.getStatut() == StatutMatch.ANNULE) {
+            return StatutMatch.ANNULE;
+        }
+
+        if (match.getDateHeureDebut() != null
+                && !match.getDateHeureDebut().plusMinutes(BusinessConstants.SLOT_DURATION_MINUTES).isAfter(maintenant)) {
+            return StatutMatch.TERMINE;
+        }
+
+        if (nbJoueursPayes >= NOMBRE_JOUEURS_REQUIS) {
+            return StatutMatch.COMPLET;
+        }
+
+        return StatutMatch.PLANIFIE;
     }
 
     private void supprimerReservationsNonPayees(Match match, Long reservationEnCoursPaiementId) {

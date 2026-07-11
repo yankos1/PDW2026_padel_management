@@ -22,6 +22,35 @@ public interface MatchRepository extends JpaRepository<Match,Long> {
     boolean existsByTerrainAndDateHeureDebut(Terrain terrain, LocalDateTime dateHeureDebut);
 
     @Query("""
+            select distinct m
+            from Match m
+            join fetch m.terrain t
+            join fetch t.site
+            join fetch m.organisateur
+            left join fetch m.reservations r
+            left join fetch r.membre
+            where m.dateHeureDebut > :maintenant
+              and m.statut <> be.ephec.pdw.padel.model.StatutMatch.ANNULE
+            """)
+    List<Match> findDisponiblesCandidates(@Param("maintenant") LocalDateTime maintenant);
+
+    @Query("""
+            select m
+            from Match m
+            where m.dateHeureDebut >= :dateDebut
+              and m.dateHeureDebut < :dateFin
+              and m.statut <> be.ephec.pdw.padel.model.StatutMatch.ANNULE
+              and (:siteId is null or m.terrain.site.id = :siteId)
+              and (:terrainId is null or m.terrain.id = :terrainId)
+            """)
+    List<Match> findMatchesForStatusSynchronization(
+            @Param("dateDebut") LocalDateTime dateDebut,
+            @Param("dateFin") LocalDateTime dateFin,
+            @Param("siteId") @Nullable Long siteId,
+            @Param("terrainId") @Nullable Long terrainId
+    );
+
+    @Query("""
             select count(m)
             from Match m
             where m.dateHeureDebut >= :dateDebut

@@ -101,14 +101,10 @@ describe('MatchListComponent', () => {
   it('resets match filters', () => {
     const component = createComponent();
     component.searchTerm = 'namur';
-    component.statutFilter = 'COMPLET';
-    component.typeFilter = 'PUBLIC';
 
     component.resetFilters();
 
     expect(component.searchTerm).toBe('');
-    expect(component.statutFilter).toBe('');
-    expect(component.typeFilter).toBe('');
   });
 
   it('waits for payment confirmation before triggering the action', () => {

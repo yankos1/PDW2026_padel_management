@@ -1,6 +1,7 @@
 package be.ephec.pdw.padel;
 
 import be.ephec.pdw.padel.exception.BusinessRuleException;
+import be.ephec.pdw.padel.dto.MatchReponseDTO;
 import be.ephec.pdw.padel.model.*;
 import be.ephec.pdw.padel.repositories.MatchRepository;
 import be.ephec.pdw.padel.repositories.MembreRepository;
@@ -19,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -33,6 +35,7 @@ class MatchServiceTest {
     @Mock private TerrainRepository terrainRepository;
     @Mock private MatchRepository matchRepository;
     @Mock private ReservationRepository reservationRepository;
+    @SuppressWarnings("unused")
     @Mock private TerrainService terrainService;
 
     @InjectMocks
@@ -83,6 +86,7 @@ class MatchServiceTest {
             assertEquals(StatutReservation.CONFIRMEE, reservation.getStatut());
             assertFalse(reservation.isEstPayee());
             assertEquals(0, reservation.getMontant());
+            assertEquals(StatutMatch.PLANIFIE, result.getStatut());
         }
 
         @Test
@@ -257,6 +261,169 @@ class MatchServiceTest {
         }
 
         @Test
+        void shouldKeepFutureIncompleteMatchPlanned() {
+            Match match = new Match();
+            match.setStatut(StatutMatch.PLANIFIE);
+            match.setDateHeureDebut(LocalDateTime.now().plusHours(2));
+
+            when(reservationRepository.countByMatchAndEstPayeeTrue(match)).thenReturn(2L);
+
+            matchService.synchroniserStatut(match);
+
+            assertEquals(StatutMatch.PLANIFIE, match.getStatut());
+            verify(matchRepository, never()).save(match);
+        }
+
+        @Test
+        void shouldMarkFutureMatchCompleteWithFourPaidReservations() {
+            Match match = new Match();
+            match.setStatut(StatutMatch.PLANIFIE);
+            match.setDateHeureDebut(LocalDateTime.now().plusHours(2));
+
+            when(reservationRepository.countByMatchAndEstPayeeTrue(match)).thenReturn(4L);
+
+            matchService.synchroniserStatut(match);
+
+            assertEquals(StatutMatch.COMPLET, match.getStatut());
+            verify(matchRepository).save(match);
+        }
+
+        @Test
+        void shouldNotCompletePublicMatchWithUnpaidReservations() {
+            Match match = new Match();
+            match.setEstPublic(true);
+            match.setStatut(StatutMatch.PLANIFIE);
+            match.setDateHeureDebut(LocalDateTime.now().plusHours(2));
+
+            when(reservationRepository.countByMatchAndEstPayeeTrue(match)).thenReturn(3L);
+
+            matchService.synchroniserStatut(match);
+
+            assertEquals(StatutMatch.PLANIFIE, match.getStatut());
+        }
+
+        @Test
+        void shouldNotDoubleCountPaidConfirmedReservationForCompletion() {
+            Match match = new Match();
+            match.setStatut(StatutMatch.PLANIFIE);
+            match.setDateHeureDebut(LocalDateTime.now().plusHours(2));
+
+            when(reservationRepository.countByMatchAndEstPayeeTrue(match)).thenReturn(1L);
+
+            matchService.synchroniserStatut(match);
+
+            assertEquals(StatutMatch.PLANIFIE, match.getStatut());
+        }
+
+        @Test
+        void shouldKeepPrivateUnpaidPlacesBeforeDayBeforeMatch() {
+            Match match = new Match();
+            match.setEstPublic(false);
+            match.setStatut(StatutMatch.PLANIFIE);
+            match.setDateHeureDebut(LocalDateTime.now().plusDays(2));
+            match.setOrganisateur(membre);
+
+            when(reservationRepository.countByMatchAndEstPayeeTrue(match)).thenReturn(1L);
+            when(reservationRepository.countByMatchAndEstPayeeFalse(match)).thenReturn(3L);
+
+            matchService.mettreAJourEtatMatch(match);
+
+            assertFalse(match.isEstPublic());
+            verify(reservationRepository, never()).deleteByMatchAndEstPayeeFalse(match);
+        }
+
+        @Test
+        void shouldReleasePrivateUnpaidPlacesWhenMatchBecomesPublicDayBefore() {
+            Match match = new Match();
+            match.setEstPublic(false);
+            match.setStatut(StatutMatch.PLANIFIE);
+            match.setDateHeureDebut(LocalDateTime.now().plusHours(10));
+            match.setOrganisateur(membre);
+
+            when(reservationRepository.countByMatchAndEstPayeeTrue(match)).thenReturn(1L);
+            when(reservationRepository.countByMatchAndEstPayeeFalse(match)).thenReturn(3L);
+
+            matchService.mettreAJourEtatMatch(match);
+
+            assertTrue(match.isEstPublic());
+            verify(reservationRepository).deleteByMatchAndEstPayeeFalse(match);
+        }
+
+        @Test
+        void shouldMarkMatchEndedAfterNinetyMinutesAsFinished() {
+            Match match = new Match();
+            match.setStatut(StatutMatch.PLANIFIE);
+            match.setDateHeureDebut(LocalDateTime.now().minusMinutes(91));
+
+            when(reservationRepository.countByMatchAndEstPayeeTrue(match)).thenReturn(2L);
+
+            matchService.synchroniserStatut(match);
+
+            assertEquals(StatutMatch.TERMINE, match.getStatut());
+            verify(matchRepository).save(match);
+        }
+
+        @Test
+        void shouldMarkPastCompleteMatchAsFinished() {
+            Match match = new Match();
+            match.setStatut(StatutMatch.COMPLET);
+            match.setDateHeureDebut(LocalDateTime.now().minusMinutes(91));
+
+            when(reservationRepository.countByMatchAndEstPayeeTrue(match)).thenReturn(4L);
+
+            matchService.synchroniserStatut(match);
+
+            assertEquals(StatutMatch.TERMINE, match.getStatut());
+            verify(matchRepository).save(match);
+        }
+
+        @Test
+        void shouldKeepCancelledMatchCancelledAfterEnd() {
+            Match match = new Match();
+            match.setStatut(StatutMatch.ANNULE);
+            match.setDateHeureDebut(LocalDateTime.now().minusMinutes(91));
+
+            matchService.synchroniserStatut(match);
+
+            assertEquals(StatutMatch.ANNULE, match.getStatut());
+            verify(reservationRepository, never()).countByMatchAndEstPayeeTrue(match);
+            verify(matchRepository, never()).save(match);
+        }
+
+        @Test
+        void shouldNeverUpdateCancelledMatchInBusinessUpdate() {
+            Match match = new Match();
+            match.setStatut(StatutMatch.ANNULE);
+            match.setEstPublic(false);
+            match.setDateHeureDebut(LocalDateTime.now().minusMinutes(91));
+            match.setOrganisateur(membre);
+
+            matchService.mettreAJourEtatMatch(match);
+
+            assertEquals(StatutMatch.ANNULE, match.getStatut());
+            assertFalse(match.isEstPublic());
+            verify(reservationRepository, never()).deleteByMatchAndEstPayeeFalse(match);
+            verify(matchRepository, never()).save(match);
+        }
+
+        @Test
+        void shouldReturnOnlyFuturePlannedAvailablePublicMatches() {
+            Match available = publicMatch(1L, StatutMatch.PLANIFIE, LocalDateTime.now().plusHours(2), List.of());
+            Match complete = publicMatch(2L, StatutMatch.PLANIFIE, LocalDateTime.now().plusHours(2), List.of());
+            Match cancelled = publicMatch(3L, StatutMatch.ANNULE, LocalDateTime.now().plusHours(2), List.of());
+
+            when(matchRepository.findDisponiblesCandidates(any())).thenReturn(List.of(available, complete, cancelled));
+            when(reservationRepository.countByMatchAndEstPayeeTrue(available)).thenReturn(1L);
+            when(reservationRepository.countByMatchAndEstPayeeTrue(complete)).thenReturn(4L);
+
+            List<MatchReponseDTO> result = matchService.matchsDisponibles();
+
+            assertEquals(1, result.size());
+            assertEquals(1L, result.getFirst().id());
+            assertEquals(StatutMatch.PLANIFIE, result.getFirst().statut());
+        }
+
+        @Test
         void shouldNotApplyPenaltyBeforeMatchStarts() {
             Match match = new Match();
             match.setEstPublic(false);
@@ -302,6 +469,27 @@ class MatchServiceTest {
             assertEquals(30, membre.getSoldeDu());
             verify(membreRepository).save(membre);
         }
+    }
+
+    private Match publicMatch(Long id, StatutMatch statut, LocalDateTime dateHeureDebut, List<Reservation> reservations) {
+        Site site = new Site();
+        site.setId(1L);
+        site.setName("Bruxelles");
+
+        Terrain terrain = new Terrain();
+        terrain.setId(1L);
+        terrain.setNom("Central");
+        terrain.setSite(site);
+
+        Match match = new Match();
+        match.setId(id);
+        match.setEstPublic(true);
+        match.setStatut(statut);
+        match.setDateHeureDebut(dateHeureDebut);
+        match.setOrganisateur(membre);
+        match.setTerrain(terrain);
+        match.setReservations(reservations);
+        return match;
     }
 }
 

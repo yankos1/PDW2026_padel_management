@@ -6,13 +6,16 @@ import be.ephec.pdw.padel.model.MembreGlobal;
 import be.ephec.pdw.padel.model.MembreSite;
 import be.ephec.pdw.padel.model.Role;
 import be.ephec.pdw.padel.model.Site;
+import be.ephec.pdw.padel.model.StatutMatch;
 import be.ephec.pdw.padel.model.Terrain;
 import be.ephec.pdw.padel.repositories.MatchRepository;
 import be.ephec.pdw.padel.repositories.MembreRepository;
 import be.ephec.pdw.padel.repositories.ReservationRepository;
 import be.ephec.pdw.padel.repositories.SiteRepository;
 import be.ephec.pdw.padel.repositories.TerrainRepository;
+import be.ephec.pdw.padel.repositories.projections.MatchStatusStatsProjection;
 import be.ephec.pdw.padel.service.AdminService;
+import be.ephec.pdw.padel.service.MatchService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,13 +47,14 @@ class AdminServiceTest {
     @Mock private MembreRepository membreRepository;
     @Mock private TerrainRepository terrainRepository;
     @Mock private SiteRepository siteRepository;
+    @Mock private MatchService matchService;
 
     private AdminService adminService;
     private Site site;
 
     @BeforeEach
     void setup() {
-        adminService = new AdminService(matchRepository, reservationRepository, membreRepository, terrainRepository, siteRepository);
+        adminService = new AdminService(matchRepository, reservationRepository, membreRepository, terrainRepository, siteRepository, matchService);
         site = Site.builder()
                 .id(1L)
                 .name("Bruxelles")
@@ -82,6 +86,12 @@ class AdminServiceTest {
         ArgumentCaptor<LocalDateTime> startCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
         ArgumentCaptor<LocalDateTime> endCaptor = ArgumentCaptor.forClass(LocalDateTime.class);
         verify(matchRepository).countDashboardMatches(startCaptor.capture(), endCaptor.capture(), eq(null), eq(null));
+        verify(matchService).synchroniserStatutsPourDashboard(
+                LocalDateTime.of(2026, 1, 5, 0, 0),
+                LocalDateTime.of(2026, 1, 21, 0, 0),
+                null,
+                null
+        );
 
         assertEquals(LocalDateTime.of(2026, 1, 5, 0, 0), startCaptor.getValue());
         assertEquals(LocalDateTime.of(2026, 1, 21, 0, 0), endCaptor.getValue());
@@ -159,6 +169,25 @@ class AdminServiceTest {
         assertEquals(BigDecimal.ZERO, dashboard.resume().tauxOccupationTerrains());
     }
 
+    @Test
+    void shouldExposeDashboardStatusDistributionAfterSynchronization() {
+        when(matchRepository.countMatchesByStatus(any(), any(), any(), any())).thenReturn(List.of(
+                statusProjection(StatutMatch.PLANIFIE, 1L),
+                statusProjection(StatutMatch.COMPLET, 2L),
+                statusProjection(StatutMatch.TERMINE, 3L),
+                statusProjection(StatutMatch.ANNULE, 4L)
+        ));
+
+        AdminDashboardDto dashboard = adminService.dashboard("G0001", LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31), null, null);
+
+        assertEquals(4, dashboard.repartitionMatchsParStatut().size());
+        assertEquals(StatutMatch.PLANIFIE, dashboard.repartitionMatchsParStatut().get(0).statut());
+        assertEquals(StatutMatch.COMPLET, dashboard.repartitionMatchsParStatut().get(1).statut());
+        assertEquals(StatutMatch.TERMINE, dashboard.repartitionMatchsParStatut().get(2).statut());
+        assertEquals(StatutMatch.ANNULE, dashboard.repartitionMatchsParStatut().get(3).statut());
+        verify(matchService).synchroniserStatutsPourDashboard(any(), any(), eq(null), eq(null));
+    }
+
     private MembreGlobal globalAdmin() {
         MembreGlobal admin = new MembreGlobal();
         admin.setMatricule("G0001");
@@ -172,5 +201,19 @@ class AdminServiceTest {
         admin.setRole(Role.ADMIN_SITE);
         admin.setSite(adminSite);
         return admin;
+    }
+
+    private MatchStatusStatsProjection statusProjection(StatutMatch statut, Long nombre) {
+        return new MatchStatusStatsProjection() {
+            @Override
+            public StatutMatch getStatut() {
+                return statut;
+            }
+
+            @Override
+            public Long getNombre() {
+                return nombre;
+            }
+        };
     }
 }

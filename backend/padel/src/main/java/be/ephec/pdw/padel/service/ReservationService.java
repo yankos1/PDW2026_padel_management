@@ -63,7 +63,9 @@ public class ReservationService {
 
         log.info("Le membre {} rejoint le match {}", matricule, matchId);
 
-        return reservationRepository.save(reservation);
+        Reservation savedReservation = reservationRepository.save(reservation);
+        matchService.synchroniserStatut(match);
+        return savedReservation;
     }
 
     @Transactional
@@ -171,7 +173,9 @@ public class ReservationService {
 
         membreRepository.save(membre);
         log.info("Paiement effectué pour la réservation {}", reservationId);
-        return reservationRepository.save(reservation);
+        Reservation savedReservation = reservationRepository.save(reservation);
+        matchService.synchroniserStatut(match);
+        return savedReservation;
     }
 
     private long nombrePlacesOccupeesMatchPublic(Match match) {
@@ -196,6 +200,7 @@ public class ReservationService {
 
         return reservationRepository.findByMembre(membre)
                 .stream()
+                .peek(reservation -> matchService.synchroniserStatut(reservation.getMatch()))
                 .map(reservation ->
                         new ReservationReponseDTO(reservation.getId(),
                         new MatchReponseDTO(reservation.getMatch().getId(),

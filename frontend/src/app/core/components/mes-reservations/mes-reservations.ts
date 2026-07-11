@@ -53,6 +53,7 @@ export class MesReservations {
   searchTerm = '';
   paiementFilter = '';
   statutFilter = '';
+  typeFilter = '';
 
   constructor(
     private reservationService: ReservationService,
@@ -178,8 +179,11 @@ export class MesReservations {
         || (this.paiementFilter === 'PAYEE' && this.estPayee(reservation))
         || (this.paiementFilter === 'NON_PAYEE' && !this.estPayee(reservation));
       const statutMatches = !this.statutFilter || this.libelleStatut(reservation) === this.statutFilter;
+      const typeMatches = !this.typeFilter
+        || (this.typeFilter === 'PUBLIC' && reservation.match?.estPublic === true)
+        || (this.typeFilter === 'PRIVE' && reservation.match?.estPublic === false);
 
-      if (!paiementMatches || !statutMatches) {
+      if (!paiementMatches || !statutMatches || !typeMatches) {
         return false;
       }
 
@@ -188,13 +192,14 @@ export class MesReservations {
   }
 
   hasActiveFilters(): boolean {
-    return Boolean(this.searchTerm.trim() || this.paiementFilter || this.statutFilter);
+    return Boolean(this.searchTerm.trim() || this.paiementFilter || this.statutFilter || this.typeFilter);
   }
 
   resetFilters() {
     this.searchTerm = '';
     this.paiementFilter = '';
     this.statutFilter = '';
+    this.typeFilter = '';
   }
 
   reservationPasseeOuAnnulee(reservation: any): boolean {

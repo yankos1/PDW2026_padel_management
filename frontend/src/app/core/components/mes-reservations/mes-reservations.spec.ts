@@ -101,17 +101,70 @@ describe('MesReservations', () => {
     expect(component.filteredReservations().map((reservation) => reservation.id)).toEqual([2]);
   });
 
+  it('shows all reservations when type filter is set to all', () => {
+    const component = createComponent();
+    component.reservations.set([
+      reservationFixture({ id: 1, estPublic: true }),
+      reservationFixture({ id: 2, estPublic: false }),
+    ]);
+
+    component.typeFilter = '';
+
+    expect(component.filteredReservations().map((reservation) => reservation.id)).toEqual([1, 2]);
+  });
+
+  it('filters public reservations by match type', () => {
+    const component = createComponent();
+    component.reservations.set([
+      reservationFixture({ id: 1, estPublic: true }),
+      reservationFixture({ id: 2, estPublic: false }),
+    ]);
+
+    component.typeFilter = 'PUBLIC';
+
+    expect(component.filteredReservations().map((reservation) => reservation.id)).toEqual([1]);
+  });
+
+  it('filters private reservations by match type', () => {
+    const component = createComponent();
+    component.reservations.set([
+      reservationFixture({ id: 1, estPublic: true }),
+      reservationFixture({ id: 2, estPublic: false }),
+    ]);
+
+    component.typeFilter = 'PRIVE';
+
+    expect(component.filteredReservations().map((reservation) => reservation.id)).toEqual([2]);
+  });
+
+  it('combines the type filter with existing reservation filters', () => {
+    const component = createComponent();
+    component.reservations.set([
+      reservationFixture({ id: 1, site: 'Bruxelles', estPublic: true, estPayee: true }),
+      reservationFixture({ id: 2, site: 'Bruxelles', estPublic: false, estPayee: true }),
+      reservationFixture({ id: 3, site: 'Namur', estPublic: false, estPayee: false }),
+    ]);
+
+    component.searchTerm = 'bruxelles';
+    component.paiementFilter = 'PAYEE';
+    component.typeFilter = 'PRIVE';
+
+    expect(component.filteredReservations().map((reservation) => reservation.id)).toEqual([2]);
+  });
+
   it('resets reservation filters', () => {
     const component = createComponent();
     component.searchTerm = 'bruxelles';
     component.paiementFilter = 'PAYEE';
     component.statutFilter = 'À venir';
+    component.typeFilter = 'PRIVE';
 
     component.resetFilters();
 
     expect(component.searchTerm).toBe('');
     expect(component.paiementFilter).toBe('');
     expect(component.statutFilter).toBe('');
+    expect(component.typeFilter).toBe('');
   });
 
   it('does not pay when confirmation is cancelled', () => {

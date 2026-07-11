@@ -14,7 +14,6 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatDivider } from '@angular/material/list';
-import { MatOption, MatSelect } from '@angular/material/select';
 import { finalize, forkJoin, switchMap } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { MatchService } from '../../services/match.service';
@@ -40,8 +39,6 @@ import { ConfirmationDialogComponent } from '../confirmation-dialog/confirmation
     MatFormField,
     MatLabel,
     MatInput,
-    MatSelect,
-    MatOption,
   ],
   templateUrl: './match-list.component.html',
   styleUrls: ['./match-list.component.css'],
@@ -53,8 +50,6 @@ export class MatchListComponent implements OnInit {
   loading = signal(false);
   joiningMatchId = signal<number | null>(null);
   searchTerm = '';
-  statutFilter = '';
-  typeFilter = '';
 
   constructor(
     private matchService: MatchService,
@@ -223,31 +218,16 @@ export class MatchListComponent implements OnInit {
     const search = this.normalize(this.searchTerm);
 
     return this.matchs().filter((match) => {
-      const statusMatches = !this.statutFilter || match.statut === this.statutFilter;
-      const typeMatches = this.typeFilter === ''
-        || (this.typeFilter === 'PUBLIC' && match.estPublic !== false)
-        || (this.typeFilter === 'PRIVE' && match.estPublic === false);
-
-      if (!statusMatches || !typeMatches) {
-        return false;
-      }
-
       return !search || this.searchableMatchText(match).includes(search);
     });
   }
 
   hasActiveFilters(): boolean {
-    return Boolean(this.searchTerm.trim() || this.statutFilter || this.typeFilter);
+    return Boolean(this.searchTerm.trim());
   }
 
   resetFilters() {
     this.searchTerm = '';
-    this.statutFilter = '';
-    this.typeFilter = '';
-  }
-
-  statusOptions(): string[] {
-    return Array.from(new Set(this.matchs().map((match) => match.statut).filter(Boolean))).sort();
   }
 
   libelleStatut(statut: string | null | undefined): string {

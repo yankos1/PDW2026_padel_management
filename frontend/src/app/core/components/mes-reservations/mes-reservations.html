@@ -38,6 +38,15 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline">
+        <mat-label>Type</mat-label>
+        <mat-select [(ngModel)]="typeFilter" name="reservationTypeFilter">
+          <mat-option value="">Tous</mat-option>
+          <mat-option value="PUBLIC">Publics</mat-option>
+          <mat-option value="PRIVE">Privés</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
         <mat-label>Statut</mat-label>
         <mat-select [(ngModel)]="statutFilter" name="reservationStatusFilter">
           <mat-option value="">Tous les statuts</mat-option>

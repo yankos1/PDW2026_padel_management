@@ -52,6 +52,7 @@ public class AdminService {
     private final MembreRepository membreRepository;
     private final TerrainRepository terrainRepository;
     private final SiteRepository siteRepository;
+    private final MatchService matchService;
 
     public long nombreMatchs(String matricule) {
         Membre admin = getAdmin(matricule);
@@ -132,6 +133,7 @@ public class AdminService {
                 .toList();
     }
 
+    @Transactional
     public AdminDashboardDto dashboard(String matricule, LocalDate dateDebut, LocalDate dateFin, Long siteId, Long terrainId) {
         Membre admin = getAdmin(matricule);
         LocalDate startDate = dateDebut != null ? dateDebut : YearMonth.now().atDay(1);
@@ -145,6 +147,7 @@ public class AdminService {
 
         LocalDateTime start = startDate.atStartOfDay();
         LocalDateTime endExclusive = endDate.plusDays(1).atStartOfDay();
+        matchService.synchroniserStatutsPourDashboard(start, endExclusive, effectiveSiteId, terrainId);
         long nombreMatchs = matchRepository.countDashboardMatches(start, endExclusive, effectiveSiteId, terrainId);
         long reservationsConfirmees = reservationRepository.countConfirmedReservations(start, endExclusive, effectiveSiteId, terrainId);
         long reservationsValides = reservationRepository.countValidReservationsForFillRate(start, endExclusive, effectiveSiteId, terrainId);
