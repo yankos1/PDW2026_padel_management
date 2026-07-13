@@ -21,6 +21,7 @@ import be.ephec.pdw.padel.repositories.TerrainRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
@@ -49,7 +50,7 @@ public class DevDataSeeder implements CommandLineRunner {
 
     @Override
     @Transactional
-    public void run(String... args) {
+    public void run(String @NonNull ... args) {
         seedSitesTerrainsEtFermetures();
         seedMembres();
         seedMatchsEtReservations();

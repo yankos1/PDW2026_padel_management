@@ -108,10 +108,6 @@ export class AuthService {
       return siteId;
     }
 
-    if (typeof siteId === 'string') {
-      return Number(siteId);
-    }
-
     return null;
   }
 

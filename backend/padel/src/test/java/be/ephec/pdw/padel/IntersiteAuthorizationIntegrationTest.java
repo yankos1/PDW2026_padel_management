@@ -1,6 +1,5 @@
 package be.ephec.pdw.padel;
 
-import be.ephec.pdw.padel.model.JourFermeture;
 import be.ephec.pdw.padel.model.Match;
 import be.ephec.pdw.padel.model.Membre;
 import be.ephec.pdw.padel.model.MembreGlobal;

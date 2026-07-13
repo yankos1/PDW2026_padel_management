@@ -62,14 +62,6 @@ public class JwtService {
         }
     }
 
-    public Optional<String> extractMatricule(String token) {
-        return validateToken(token).map(JwtUser::matricule);
-    }
-
-    public Optional<Role> extractRole(String token) {
-        return validateToken(token).map(JwtUser::role);
-    }
-
     private Claims parseClaims(String token) {
         return Jwts.parser()
                 .verifyWith(signingKey)
