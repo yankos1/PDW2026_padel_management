@@ -14,6 +14,47 @@
   border-radius: 8px;
 }
 
+.password-card {
+  margin-top: 20px;
+}
+
+.password-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 12px;
+  max-width: 480px;
+}
+
+.password-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.password-form input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.password-form button {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 4px;
+  color: white;
+  background: #1976d2;
+  cursor: pointer;
+}
+
+.password-form button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.password-error {
+  margin: 0;
+  color: #b00020;
+}
+
 .info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));

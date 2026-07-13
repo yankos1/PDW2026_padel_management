@@ -24,7 +24,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AuthServiceTest {
-
     @Test
     void shouldLoginUserWithoutPasswordAndWithoutAuthenticationManager() {
         MembreRepository repository = mock(MembreRepository.class);

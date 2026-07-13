@@ -8,6 +8,7 @@ import be.ephec.pdw.padel.repositories.MembreRepository;
 import be.ephec.pdw.padel.repositories.ReservationRepository;
 import be.ephec.pdw.padel.repositories.TerrainRepository;
 import be.ephec.pdw.padel.service.MatchService;
+import be.ephec.pdw.padel.service.CurrentUserService;
 import be.ephec.pdw.padel.service.TerrainService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -37,6 +38,7 @@ class MatchServiceTest {
     @Mock private ReservationRepository reservationRepository;
     @SuppressWarnings("unused")
     @Mock private TerrainService terrainService;
+    @Mock private CurrentUserService currentUserService;
 
     @InjectMocks
     private MatchService matchService;

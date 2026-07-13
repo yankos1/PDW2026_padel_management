@@ -3,11 +3,6 @@ import { Injectable } from '@angular/core';
 import { Membre } from '../models/membre';
 import { TypeMembre } from '../models/membre';
 
-export interface AdminPasswordStatus {
-  admin: boolean;
-  passwordCreation: boolean;
-}
-
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private api = '/api/auth';
@@ -22,10 +17,12 @@ export class AuthService {
     });
   }
 
-  getAdminPasswordStatus(matricule: string) {
-    return this.http.get<AdminPasswordStatus>(
-      `${this.api}/admin-password-status/${encodeURIComponent(matricule)}`,
-    );
+  changeAdminPassword(currentPassword: string, newPassword: string, confirmPassword: string) {
+    return this.http.put<void>(`${this.api}/password`, {
+      currentPassword,
+      newPassword,
+      confirmPassword,
+    });
   }
 
   register(input: {

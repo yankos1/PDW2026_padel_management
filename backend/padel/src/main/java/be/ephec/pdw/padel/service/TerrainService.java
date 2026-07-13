@@ -28,27 +28,23 @@ public class TerrainService {
     public void verifierJourFermeture(Site site, LocalDateTime dateMatch){
         LocalDate date = dateMatch.toLocalDate();
 
-        if(jourFermetureRepository.existsByDate(date)){
-            throw new BusinessRuleException("Les sites sont fermé ce jour");
-        }
-
-        if (jourFermetureRepository.existsBySiteAndDate(site, date)){
+        if (estSiteFerme(site, date)) {
             throw new BusinessRuleException("Ce site est fermé ce jour");
-
         }
     }
 
-    public List<TerrainDTO> getTerrainsDisponibles(LocalDate date) {
-        // vérifier jours de fermeture
-        if (jourFermetureRepository.existsByDate(date)) {
-            return List.of();
-        }
+    public boolean estSiteFerme(Site site, LocalDate date) {
+        return jourFermetureRepository.existsBySiteIsNullAndDate(date)
+                || jourFermetureRepository.existsBySiteAndDate(site, date);
+    }
 
+    public List<TerrainDTO> getTerrainsDisponibles(LocalDate date) {
         // récupérer tous les terrains
         List<Terrain> terrains = terrainRepository.findAll();
 
         // filtrer ceux qui ont au moins un créneau libre
         return terrains.stream()
+                .filter(t -> !estSiteFerme(t.getSite(), date))
                 .filter(t -> hasAvailableSlot(t, date))
                 .map(this::toDTO)
                 .toList();
@@ -59,6 +55,7 @@ public class TerrainService {
         LocalTime time = LocalTime.parse(heure);
 
         return terrainRepository.findBySiteId(siteId).stream()
+                .filter(t -> !estSiteFerme(t.getSite(), date))
                 .filter(t -> !matchRepository.existsByTerrainAndDateHeureDebut(
                         t,
                         LocalDateTime.of(date, time)
@@ -104,15 +101,13 @@ public class TerrainService {
     }
 
     public List<String> getCreneauxDisponibles(LocalDate date) {
-
-        if (jourFermetureRepository.existsByDate(date)) {
-            return List.of();
-        }
-
         List<Terrain> terrains = terrainRepository.findAll();
         List<String> slots = new ArrayList<>();
 
         for (Terrain terrain : terrains) {
+            if (estSiteFerme(terrain.getSite(), date)) {
+                continue;
+            }
 
             LocalTime open = terrain.getSite().getHeureOuverture();
             LocalTime close = terrain.getSite().getHeureFermeture();

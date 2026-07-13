@@ -34,12 +34,10 @@ export class LoginComponent {
 
   loginLoading = false;
   adminPasswordRequired = false;
-  adminPasswordCreation = false;
   showRegisterForm = false;
   registerLoading = false;
   registerSubmitted = false;
   registerFieldErrors: Record<string, string> = {};
-  private matriculeStatusTimer?: ReturnType<typeof setTimeout>;
   registerForm = {
     nom: '',
     prenom: '',
@@ -67,9 +65,7 @@ export class LoginComponent {
     }
 
     if (this.adminPasswordRequired && !this.password.trim()) {
-      this.error = this.adminPasswordCreation
-        ? 'Choisissez un mot de passe admin'
-        : 'Mot de passe admin requis';
+      this.error = 'Mot de passe admin requis';
       this.notificationService.warning(this.error);
       return;
     }
@@ -80,16 +76,17 @@ export class LoginComponent {
     this.authService.login(this.matricule.trim(), password)
       .pipe(finalize(() => (this.loginLoading = false)))
       .subscribe({
-      next: (user) => {
-        this.authService.setUser(user);
+      next: (session) => {
+        this.authService.setUser(session);
         this.notificationService.success('Connexion réussie.');
         this.router.navigate(['/home']);
       },
       error: (err) => {
         const message = this.errorMessage(err, 'Connexion impossible');
-        if (message === 'Mot de passe admin requis' || message === 'Creation du mot de passe admin requise') {
+        if (!this.adminPasswordRequired) {
           this.adminPasswordRequired = true;
-          this.checkAdminPasswordStatus();
+          this.error = message;
+          this.notificationService.error(message);
           return;
         }
 
@@ -100,42 +97,9 @@ export class LoginComponent {
   }
 
   onMatriculeChange() {
-    if (this.matriculeStatusTimer) {
-      clearTimeout(this.matriculeStatusTimer);
-    }
-
     this.adminPasswordRequired = false;
-    this.adminPasswordCreation = false;
     this.password = '';
     this.error = '';
-
-
-    const matricule = this.matricule.trim();
-
-    if (matricule.length < 2) {
-      return;
-    }
-
-    this.matriculeStatusTimer = setTimeout(() => this.checkAdminPasswordStatus(), 300);
-  }
-
-  checkAdminPasswordStatus() {
-    const matricule = this.matricule.trim();
-
-    if (!matricule) {
-      return;
-    }
-
-    this.authService.getAdminPasswordStatus(matricule).subscribe({
-      next: (status) => {
-        this.adminPasswordRequired = status.admin;
-        this.adminPasswordCreation = status.passwordCreation;
-      },
-      error: () => {
-        this.adminPasswordRequired = false;
-        this.adminPasswordCreation = false;
-      },
-    });
   }
 
   toggleRegisterForm() {
@@ -177,7 +141,6 @@ export class LoginComponent {
         this.matricule = user.matricule;
         this.password = '';
         this.adminPasswordRequired = false;
-        this.adminPasswordCreation = false;
         this.registerForm = {
           nom: '',
           prenom: '',

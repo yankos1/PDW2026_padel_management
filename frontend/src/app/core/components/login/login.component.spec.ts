@@ -29,10 +29,31 @@ describe('LoginComponent', () => {
     expect(component.loginLoading).toBe(true);
     expect(login).toHaveBeenCalledTimes(1);
 
-    login$.next({ matricule: 'G0001' });
+    login$.next({ matricule: 'G0001', role: 'ADMIN_GLOBAL', token: 'jwt-admin' });
     login$.complete();
 
     expect(component.loginLoading).toBe(false);
+  });
+
+  it('creates a normal session directly for an administrator', () => {
+    const session = { matricule: 'G0001', role: 'ADMIN_GLOBAL', token: 'jwt-admin' };
+    const login = vi.fn().mockReturnValue(of(session));
+    const setUser = vi.fn();
+    const authService = {
+      login,
+      setUser,
+    };
+    const router = { navigate: vi.fn() };
+    const component = new LoginComponent(authService as any, router as any, notificationMock() as any);
+    component.matricule = 'G0001';
+    component.password = 'configured-admin-password';
+    component.adminPasswordRequired = true;
+
+    component.login();
+
+    expect(login).toHaveBeenCalledWith('G0001', 'configured-admin-password');
+    expect(setUser).toHaveBeenCalledWith(session);
+    expect(router.navigate).toHaveBeenCalledWith(['/home']);
   });
 
   it('shows success notification after registration and clears loading', () => {
@@ -70,10 +91,9 @@ describe('LoginComponent', () => {
 
 function createComponent(authOverrides: Record<string, any> = {}, notificationService = notificationMock()) {
   const authService = {
-    login: vi.fn().mockReturnValue(of({ matricule: 'G0001' })),
+    login: vi.fn().mockReturnValue(of({ matricule: 'G0001', role: 'USER', token: 'jwt-user' })),
     register: vi.fn().mockReturnValue(of({ matricule: 'G1234' })),
     setUser: vi.fn(),
-    getAdminPasswordStatus: vi.fn().mockReturnValue(of({ admin: false, passwordCreation: false })),
     ...authOverrides,
   };
   const router = { navigate: vi.fn() };

@@ -9,10 +9,10 @@ import be.ephec.pdw.padel.repositories.MatchRepository;
 import be.ephec.pdw.padel.repositories.MembreRepository;
 import be.ephec.pdw.padel.repositories.ReservationRepository;
 import be.ephec.pdw.padel.repositories.TerrainRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,9 +28,11 @@ public class MatchService {
     private final MatchRepository matchRepository;
     private final ReservationRepository reservationRepository;
     private final TerrainService terrainService;
+    private final CurrentUserService currentUserService;
 
 
 
+    @Transactional
     public Match creerMatch(String matricule, Long idTerrain, LocalDateTime dateHeure, boolean estPublic) {
 
         Membre membre = membreRepository.findById(matricule)
@@ -124,9 +126,16 @@ public class MatchService {
         );
     }
 
-    public List<JoueurDTO> joueursInscritMatch(Long Matchid){
+    public List<JoueurDTO> joueursInscritMatch(Long Matchid, Membre utilisateur){
         Match match = matchRepository.findById(Matchid)
                 .orElseThrow(() -> new BusinessRuleException("Match introuvable"));
+
+        if (currentUserService.isAdmin(utilisateur)) {
+            currentUserService.verifierAccesAdministrateurAuSite(
+                    utilisateur,
+                    match.getTerrain().getSite()
+            );
+        }
 
         return match.getReservations()
                 .stream()

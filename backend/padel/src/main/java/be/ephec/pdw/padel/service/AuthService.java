@@ -1,28 +1,38 @@
 package be.ephec.pdw.padel.service;
 
 import be.ephec.pdw.padel.exception.BusinessRuleException;
+import be.ephec.pdw.padel.exception.ForbiddenException;
 import be.ephec.pdw.padel.dto.LoginDTO;
 import be.ephec.pdw.padel.dto.RegisterDTO;
 import be.ephec.pdw.padel.model.Membre;
 import be.ephec.pdw.padel.model.MembreLibre;
 import be.ephec.pdw.padel.model.Role;
 import be.ephec.pdw.padel.repositories.MembreRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@RequiredArgsConstructor
 public class AuthService {
     private final MembreRepository membreRepository;
     private final PasswordEncoder passwordEncoder;
     private final LoginAttemptService loginAttemptService;
     private final AuthenticationManager authenticationManager;
+
+    public AuthService(
+            MembreRepository membreRepository,
+            PasswordEncoder passwordEncoder,
+            LoginAttemptService loginAttemptService,
+            AuthenticationManager authenticationManager
+    ) {
+        this.membreRepository = membreRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.loginAttemptService = loginAttemptService;
+        this.authenticationManager = authenticationManager;
+    }
 
     public Membre login(LoginDTO input) {
         String matricule = normalizeMatricule(input.getMatricule());
@@ -41,11 +51,8 @@ public class AuthService {
                 return membre;
             }
 
-            if (isAdmin(membre) && hasNoAdminPassword(membre)) {
-                configureFirstAdminPassword(membre, input.getPassword());
-            }
-
-            if (input.getPassword() == null || input.getPassword().isBlank()) {
+            if (!isAdmin(membre) || hasNoAdminPassword(membre)
+                    || input.getPassword() == null || input.getPassword().isBlank()) {
                 throw new BadCredentialsException("Identifiants invalides");
             }
 
@@ -58,16 +65,31 @@ public class AuthService {
         }
     }
 
-    public Map<String, Boolean> adminPasswordStatus(String matricule) {
-        Membre membre = membreRepository.findById(normalizeMatricule(matricule))
-                .orElseThrow(() -> new BusinessRuleException("Invalid matricule"));
+    @Transactional
+    public void changeAdminPassword(String matricule, String currentPassword, String newPassword, String confirmation) {
+        Membre membre = membreRepository.findById(matricule)
+                .orElseThrow(() -> new BadCredentialsException("Identifiants invalides"));
 
-        boolean admin = isAdmin(membre);
+        if (!isAdmin(membre)) {
+            throw new ForbiddenException("Acces reserve aux administrateurs");
+        }
+        if (hasNoAdminPassword(membre)
+                || currentPassword == null
+                || !passwordEncoder.matches(currentPassword, membre.getAdminPasswordHash())) {
+            throw new BadCredentialsException("Identifiants invalides");
+        }
+        if (newPassword == null || newPassword.isBlank() || !newPassword.equals(confirmation)) {
+            throw new BusinessRuleException("Les mots de passe ne correspondent pas");
+        }
+        if (newPassword.length() < 12) {
+            throw new BusinessRuleException("Le mot de passe admin doit contenir au moins 12 caracteres");
+        }
+        if (passwordEncoder.matches(newPassword, membre.getAdminPasswordHash())) {
+            throw new BusinessRuleException("Le nouveau mot de passe doit etre different de l'ancien");
+        }
 
-        return Map.of(
-                "admin", admin,
-                "passwordCreation", admin && hasNoAdminPassword(membre)
-        );
+        membre.setAdminPasswordHash(passwordEncoder.encode(newPassword));
+        membreRepository.save(membre);
     }
 
     public Membre register(RegisterDTO input) {
@@ -98,19 +120,6 @@ public class AuthService {
         return membre.getRole() == Role.ADMIN_GLOBAL || membre.getRole() == Role.ADMIN_SITE;
     }
 
-    private void configureFirstAdminPassword(Membre membre, String password) {
-        if (password == null || password.isBlank()) {
-            throw new BusinessRuleException("Creation du mot de passe admin requise");
-        }
-
-        if (password.length() < 12) {
-            throw new BusinessRuleException("Le mot de passe admin doit contenir au moins 12 caracteres");
-        }
-
-        membre.setAdminPasswordHash(passwordEncoder.encode(password));
-        membreRepository.save(membre);
-    }
-
     private void authenticate(String matricule, String password) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(matricule, password == null ? "" : password)
@@ -136,4 +145,5 @@ public class AuthService {
 
         return value.trim();
     }
+
 }

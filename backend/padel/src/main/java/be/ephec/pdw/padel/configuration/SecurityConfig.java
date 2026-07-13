@@ -44,7 +44,6 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/auth/admin-password-status/*").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/admin/**").hasAnyRole("ADMIN_SITE", "ADMIN_GLOBAL")
                         .requestMatchers("/reservation/**").authenticated()

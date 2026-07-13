@@ -16,6 +16,7 @@ import be.ephec.pdw.padel.repositories.TerrainRepository;
 import be.ephec.pdw.padel.repositories.projections.MatchStatusStatsProjection;
 import be.ephec.pdw.padel.service.AdminService;
 import be.ephec.pdw.padel.service.MatchService;
+import be.ephec.pdw.padel.service.TerrainService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,13 +49,14 @@ class AdminServiceTest {
     @Mock private TerrainRepository terrainRepository;
     @Mock private SiteRepository siteRepository;
     @Mock private MatchService matchService;
+    @Mock private TerrainService terrainService;
 
     private AdminService adminService;
     private Site site;
 
     @BeforeEach
     void setup() {
-        adminService = new AdminService(matchRepository, reservationRepository, membreRepository, terrainRepository, siteRepository, matchService);
+        adminService = new AdminService(matchRepository, reservationRepository, membreRepository, terrainRepository, siteRepository, matchService, terrainService);
         site = Site.builder()
                 .id(1L)
                 .name("Bruxelles")
@@ -157,6 +159,18 @@ class AdminServiceTest {
         AdminDashboardDto dashboard = adminService.dashboard("G0001", LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 1), null, null);
 
         assertEquals(BigDecimal.ZERO, dashboard.resume().tauxOccupationTerrains());
+    }
+
+    @Test
+    void shouldExcludeApplicableClosuresFromAvailableDashboardSlots() {
+        LocalDate date = LocalDate.of(2026, 1, 1);
+        when(terrainService.estSiteFerme(site, date)).thenReturn(true);
+        when(matchRepository.countUsedSlots(any(), any(), any(), any())).thenReturn(1L);
+
+        AdminDashboardDto dashboard = adminService.dashboard("G0001", date, date, null, null);
+
+        assertEquals(BigDecimal.ZERO, dashboard.resume().tauxOccupationTerrains());
+        verify(terrainService).estSiteFerme(site, date);
     }
 
     @Test

@@ -19,18 +19,17 @@
             data-cy="login-matricule"
             [(ngModel)]="matricule"
             (ngModelChange)="onMatriculeChange()"
-            (blur)="checkAdminPasswordStatus()"
             required
           />
         </div>
 
         @if (adminPasswordRequired) {
           <div class="form-field">
-            <label>{{ adminPasswordCreation ? 'Créer le mot de passe admin' : 'Mot de passe admin' }}</label>
+            <label>Mot de passe administrateur</label>
             <input
               matInput
               type="password"
-              [placeholder]="adminPasswordCreation ? 'Minimum 12 caractères' : 'Mot de passe admin'"
+              placeholder="Mot de passe administrateur"
               name="password"
               [(ngModel)]="password"
               required

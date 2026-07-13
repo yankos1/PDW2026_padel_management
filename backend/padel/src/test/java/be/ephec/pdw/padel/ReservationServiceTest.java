@@ -11,6 +11,7 @@ import be.ephec.pdw.padel.repositories.MatchRepository;
 import be.ephec.pdw.padel.repositories.MembreRepository;
 import be.ephec.pdw.padel.repositories.ReservationRepository;
 import be.ephec.pdw.padel.service.MatchService;
+import be.ephec.pdw.padel.service.CurrentUserService;
 import be.ephec.pdw.padel.service.ReservationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -39,6 +40,7 @@ class ReservationServiceTest {
     @Mock private MembreRepository membreRepository;
     @Mock private ReservationRepository reservationRepository;
     @Mock private MatchService matchService;
+    @Mock private CurrentUserService currentUserService;
 
     @InjectMocks
     private ReservationService reservationService;
@@ -152,7 +154,7 @@ class ReservationServiceTest {
         when(reservationRepository.countByMatchAndEstPayeeTrue(match)).thenReturn(0L);
         when(reservationRepository.save(reservation)).thenReturn(reservation);
 
-        Reservation result = reservationService.payerReservation(48L);
+        Reservation result = reservationService.payerReservation(48L, organisateur);
 
         assertTrue(result.isEstPayee());
         assertEquals(15, result.getMontant());
@@ -173,7 +175,7 @@ class ReservationServiceTest {
         when(reservationRepository.countByMatchAndEstPayeeTrue(match)).thenReturn(1L);
         when(reservationRepository.save(reservation)).thenReturn(reservation);
 
-        Reservation result = reservationService.payerReservation(49L);
+        Reservation result = reservationService.payerReservation(49L, joueur);
 
         assertTrue(result.isEstPayee());
         assertEquals(45, result.getMontant());
@@ -194,7 +196,7 @@ class ReservationServiceTest {
         when(reservationRepository.countByMatchAndEstPayeeTrue(match)).thenReturn(3L);
         when(reservationRepository.save(reservation)).thenReturn(reservation);
 
-        Reservation result = reservationService.payerReservation(50L);
+        Reservation result = reservationService.payerReservation(50L, joueur);
 
         assertTrue(result.isEstPayee());
         assertEquals(StatutReservation.CONFIRMEE, result.getStatut());

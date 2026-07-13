@@ -1,20 +1,32 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MatCard, MatCardContent, MatCardHeader, MatCardTitle } from '@angular/material/card';
 import { AuthService } from '../../services/auth.service';
 import { Membre, TypeMembre } from '../../models/membre';
+import { finalize } from 'rxjs';
+import { NotificationService } from '../../services/notification.service';
+import { getApiErrorMessage } from '../../utils/api-error.util';
 
 @Component({
   selector: 'app-mon-compte',
   standalone: true,
-  imports: [CommonModule, MatCard, MatCardContent, MatCardHeader, MatCardTitle],
+  imports: [CommonModule, FormsModule, MatCard, MatCardContent, MatCardHeader, MatCardTitle],
   templateUrl: './mon-compte.html',
   styleUrl: './mon-compte.css',
 })
 export class MonCompte {
   user: Membre | null;
+  currentPassword = '';
+  newPassword = '';
+  confirmPassword = '';
+  passwordLoading = false;
+  passwordError = '';
 
-  constructor(private authService: AuthService) {
+  constructor(
+    private authService: AuthService,
+    private notificationService: NotificationService,
+  ) {
     this.user = this.authService.getUser();
   }
 
@@ -63,6 +75,46 @@ export class MonCompte {
 
   matricule(): string {
     return this.authService.getMatricule() || 'Non renseigne';
+  }
+
+  isAdmin(): boolean {
+    return this.authService.isAdmin();
+  }
+
+  changePassword(): void {
+    if (this.passwordLoading) {
+      return;
+    }
+
+    this.passwordError = '';
+    if (!this.currentPassword || !this.newPassword || !this.confirmPassword) {
+      this.passwordError = 'Tous les champs sont obligatoires.';
+    } else if (this.newPassword.length < 12) {
+      this.passwordError = 'Le nouveau mot de passe doit contenir au moins 12 caractères.';
+    } else if (this.newPassword !== this.confirmPassword) {
+      this.passwordError = 'Les mots de passe ne correspondent pas.';
+    }
+
+    if (this.passwordError) {
+      this.notificationService.warning(this.passwordError);
+      return;
+    }
+
+    this.passwordLoading = true;
+    this.authService.changeAdminPassword(this.currentPassword, this.newPassword, this.confirmPassword)
+      .pipe(finalize(() => (this.passwordLoading = false)))
+      .subscribe({
+        next: () => {
+          this.currentPassword = '';
+          this.newPassword = '';
+          this.confirmPassword = '';
+          this.notificationService.success('Mot de passe modifié avec succès.');
+        },
+        error: (error) => {
+          this.passwordError = getApiErrorMessage(error, 'Modification du mot de passe impossible');
+          this.notificationService.error(this.passwordError);
+        },
+      });
   }
 
   penaliteActive(): boolean {

@@ -62,7 +62,7 @@ public class MatchController {
     @GetMapping("/{id}/joueurs")
     @PreAuthorize("isAuthenticated()")
     public List<JoueurDTO> joueursInscrits(@PathVariable Long id) {
-        return matchService.joueursInscritMatch(id);
+        return matchService.joueursInscritMatch(id, currentUserService.getCurrentUser());
     }
 
     /************

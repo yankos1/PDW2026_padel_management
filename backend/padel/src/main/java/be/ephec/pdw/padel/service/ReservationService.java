@@ -2,6 +2,7 @@ package be.ephec.pdw.padel.service;
 
 import be.ephec.pdw.padel.constants.BusinessConstants;
 import be.ephec.pdw.padel.exception.BusinessRuleException;
+import be.ephec.pdw.padel.exception.ForbiddenException;
 import be.ephec.pdw.padel.dto.MatchReponseDTO;
 import be.ephec.pdw.padel.dto.ReservationReponseDTO;
 import be.ephec.pdw.padel.model.*;
@@ -26,6 +27,7 @@ public class ReservationService {
     private final MembreRepository membreRepository;
     private final ReservationRepository reservationRepository;
     private final MatchService matchService;
+    private final CurrentUserService currentUserService;
 
     @Transactional
     public Reservation rejoindreMatch(String matricule, Long matchId) {
@@ -118,10 +120,11 @@ public class ReservationService {
     }
 
     @Transactional
-    public Reservation payerReservation(Long reservationId) {
+    public Reservation payerReservation(Long reservationId, Membre utilisateur) {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new BusinessRuleException("reservation introuvable"));
 
+        verifierAccesReservation(utilisateur, reservation);
 
         if (reservation.isEstPayee())
             throw new BusinessRuleException("reservation déja payée");
@@ -194,11 +197,32 @@ public class ReservationService {
                 .equals(reservation.getMatch().getOrganisateur().getMatricule());
     }
 
-    public List<ReservationReponseDTO> getReservationsByMembre(String matricule) {
-        Membre membre = membreRepository.findById(matricule)
+    public List<ReservationReponseDTO> getReservationsByMembre(String matricule, Membre utilisateur) {
+        String matriculeNormalise = matricule.trim().toUpperCase();
+        if (!currentUserService.isAdmin(utilisateur)
+                && !utilisateur.getMatricule().equals(matriculeNormalise)) {
+            throw new ForbiddenException("Acces refuse");
+        }
+
+        Membre membre = membreRepository.findById(matriculeNormalise)
                 .orElseThrow(() -> new BusinessRuleException("Membre introuvable"));
 
-        return reservationRepository.findByMembre(membre)
+        List<Reservation> reservations = reservationRepository.findByMembre(membre);
+        if (currentUserService.isAdminSite(utilisateur)) {
+            List<Reservation> reservationsAccessibles = reservations.stream()
+                    .filter(reservation -> currentUserService.peutAdministrerSite(
+                            utilisateur,
+                            reservation.getMatch().getTerrain().getSite()
+                    ))
+                    .toList();
+
+            if (!reservations.isEmpty() && reservationsAccessibles.isEmpty()) {
+                throw new ForbiddenException("Acces refuse");
+            }
+            reservations = reservationsAccessibles;
+        }
+
+        return reservations
                 .stream()
                 .peek(reservation -> matchService.synchroniserStatut(reservation.getMatch()))
                 .map(reservation ->
@@ -218,5 +242,22 @@ public class ReservationService {
                         reservation.getStatut()
                 ))
                 .toList();
+    }
+
+    private void verifierAccesReservation(Membre utilisateur, Reservation reservation) {
+        if (utilisateur.getMatricule().equals(reservation.getMembre().getMatricule())) {
+            return;
+        }
+        if (currentUserService.isAdminGlobal(utilisateur)) {
+            return;
+        }
+        if (currentUserService.isAdminSite(utilisateur)) {
+            currentUserService.verifierAccesAdministrateurAuSite(
+                    utilisateur,
+                    reservation.getMatch().getTerrain().getSite()
+            );
+            return;
+        }
+        throw new ForbiddenException("Acces refuse");
     }
 }

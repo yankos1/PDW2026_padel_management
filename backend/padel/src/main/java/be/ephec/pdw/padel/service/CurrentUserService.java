@@ -2,7 +2,9 @@ package be.ephec.pdw.padel.service;
 
 import be.ephec.pdw.padel.exception.ForbiddenException;
 import be.ephec.pdw.padel.model.Membre;
+import be.ephec.pdw.padel.model.MembreSite;
 import be.ephec.pdw.padel.model.Role;
+import be.ephec.pdw.padel.model.Site;
 import be.ephec.pdw.padel.repositories.MembreRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -31,5 +33,37 @@ public class CurrentUserService {
 
     public boolean isAdmin(Membre membre) {
         return membre.getRole() == Role.ADMIN_GLOBAL || membre.getRole() == Role.ADMIN_SITE;
+    }
+
+    public boolean isAdminGlobal(Membre membre) {
+        return membre.getRole() == Role.ADMIN_GLOBAL;
+    }
+
+    public boolean isAdminSite(Membre membre) {
+        return membre.getRole() == Role.ADMIN_SITE;
+    }
+
+    public boolean peutAdministrerSite(Membre membre, Site site) {
+        if (isAdminGlobal(membre)) {
+            return true;
+        }
+        if (!isAdminSite(membre) || !(membre instanceof MembreSite membreSite)) {
+            return false;
+        }
+
+        Site siteAdministrateur = membreSite.getSite();
+        if (siteAdministrateur == null || site == null) {
+            return false;
+        }
+        if (siteAdministrateur.getId() != null && site.getId() != null) {
+            return siteAdministrateur.getId().equals(site.getId());
+        }
+        return siteAdministrateur == site;
+    }
+
+    public void verifierAccesAdministrateurAuSite(Membre membre, Site site) {
+        if (!peutAdministrerSite(membre, site)) {
+            throw new ForbiddenException("Acces refuse");
+        }
     }
 }

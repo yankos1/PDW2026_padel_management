@@ -46,6 +46,38 @@
         </div>
       </mat-card-content>
     </mat-card>
+
+    @if (isAdmin()) {
+      <mat-card class="account-card password-card">
+        <mat-card-header>
+          <mat-card-title>Modifier mon mot de passe</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <form class="password-form" (ngSubmit)="changePassword()" [attr.aria-busy]="passwordLoading">
+            <label>
+              Mot de passe actuel
+              <input type="password" name="currentPassword" [(ngModel)]="currentPassword" required />
+            </label>
+            <label>
+              Nouveau mot de passe
+              <input type="password" name="newPassword" [(ngModel)]="newPassword" minlength="12" required />
+            </label>
+            <label>
+              Confirmation
+              <input type="password" name="confirmPassword" [(ngModel)]="confirmPassword" required />
+            </label>
+
+            @if (passwordError) {
+              <p class="password-error" aria-live="polite">{{ passwordError }}</p>
+            }
+
+            <button type="submit" [disabled]="passwordLoading">
+              {{ passwordLoading ? 'Modification...' : 'Modifier le mot de passe' }}
+            </button>
+          </form>
+        </mat-card-content>
+      </mat-card>
+    }
   } @else {
     <p class="empty">Aucun compte connecté.</p>
   }

@@ -8,6 +8,7 @@ import be.ephec.pdw.padel.model.MembreLibre;
 import be.ephec.pdw.padel.model.Role;
 import be.ephec.pdw.padel.security.JwtService;
 import be.ephec.pdw.padel.service.AuthService;
+import be.ephec.pdw.padel.service.CurrentUserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,14 +28,16 @@ class AuthControllerTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private AuthService authService;
     private JwtService jwtService;
+    private CurrentUserService currentUserService;
     private MockMvc mockMvc;
 
     @BeforeEach
     void setup() {
         authService = mock(AuthService.class);
         jwtService = mock(JwtService.class);
+        currentUserService = mock(CurrentUserService.class);
         mockMvc = MockMvcBuilders
-                .standaloneSetup(new AuthController(authService, jwtService))
+                .standaloneSetup(new AuthController(authService, jwtService, currentUserService))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }

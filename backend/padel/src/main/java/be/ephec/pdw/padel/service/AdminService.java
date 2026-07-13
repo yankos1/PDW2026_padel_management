@@ -53,6 +53,7 @@ public class AdminService {
     private final TerrainRepository terrainRepository;
     private final SiteRepository siteRepository;
     private final MatchService matchService;
+    private final TerrainService terrainService;
 
     public long nombreMatchs(String matricule) {
         Membre admin = getAdmin(matricule);
@@ -256,7 +257,7 @@ public class AdminService {
         }
 
         long joursOuverts = dateDebut.datesUntil(dateFin.plusDays(1))
-                .filter(date -> site.getJourFermeture() == null || site.getJourFermeture().stream().noneMatch(jour -> Objects.equals(jour.getDate(), date)))
+                .filter(date -> !terrainService.estSiteFerme(site, date))
                 .count();
 
         return joursOuverts * slotsParJour * terrains;

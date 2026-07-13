@@ -21,8 +21,10 @@ import be.ephec.pdw.padel.repositories.TerrainRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -40,6 +42,10 @@ public class DevDataSeeder implements CommandLineRunner {
     private final JourFermetureRepository jourFermetureRepository;
     private final MatchRepository matchRepository;
     private final ReservationRepository reservationRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    @Value("${app.security.admin-default-password:}")
+    private String adminDefaultPassword;
 
     @Override
     @Transactional
@@ -67,12 +73,22 @@ public class DevDataSeeder implements CommandLineRunner {
     private void seedMembres() {
         Site site = findSiteByName("Padel Bruxelles");
 
-        getOrCreateMembreGlobal("G0001", "Admin", "Global", "admin.global@example.test", Role.ADMIN_GLOBAL);
+        initialiserMotDePasseAdmin(
+                getOrCreateMembreGlobal("G0001", "Admin", "Global", "admin.global@example.test", Role.ADMIN_GLOBAL)
+        );
+        initialiserMotDePasseAdmin(
+                getOrCreateMembreGlobal("G0101", "Administrateur", "Test", "admin.test@padel.local", Role.ADMIN_GLOBAL)
+        );
+        initialiserMotDePasseAdmin(
+                getOrCreateMembreGlobal("G0102", "Administrateur Deux", "Test", "admin.test2@padel.local", Role.ADMIN_GLOBAL)
+        );
         getOrCreateMembreGlobal("G0002", "Alice", "Martin", "alice.martin@example.test", Role.USER);
         getOrCreateMembreGlobal("G0003", "Emma", "Bernard", "emma.bernard@example.test", Role.USER);
         getOrCreateMembreGlobal("G0004", "Lucas", "Petit", "lucas.petit@example.test", Role.USER);
         getOrCreateMembreGlobal("G0005", "Mila", "Robert", "mila.robert@example.test", Role.USER);
-        getOrCreateMembreSite("S0001", "Admin", "Site", "admin.site@example.test", Role.ADMIN_SITE, site);
+        initialiserMotDePasseAdmin(
+                getOrCreateMembreSite("S0001", "Admin", "Site", "admin.site@example.test", Role.ADMIN_SITE, site)
+        );
         getOrCreateMembreSite("S0002", "Bruno", "Lambert", "bruno.lambert@example.test", Role.USER, site);
         getOrCreateMembreSite("S0003", "Nora", "Dubois", "nora.dubois@example.test", Role.USER, site);
         getOrCreateMembreSite("S0004", "Hugo", "Moreau", "hugo.moreau@example.test", Role.USER, site);
@@ -163,20 +179,31 @@ public class DevDataSeeder implements CommandLineRunner {
         }
     }
 
-    private void getOrCreateMembreGlobal(String matricule, String prenom, String nom, String email, Role role) {
-        if (membreRepository.existsById(matricule)) {
-            return;
-        }
-
-        membreRepository.save(creerMembreGlobal(matricule, prenom, nom, email, role));
+    private Membre getOrCreateMembreGlobal(String matricule, String prenom, String nom, String email, Role role) {
+        return membreRepository.findById(matricule)
+                .orElseGet(() -> membreRepository.save(creerMembreGlobal(matricule, prenom, nom, email, role)));
     }
 
-    private void getOrCreateMembreSite(String matricule, String prenom, String nom, String email, Role role, Site site) {
-        if (membreRepository.existsById(matricule)) {
+    private Membre getOrCreateMembreSite(String matricule, String prenom, String nom, String email, Role role, Site site) {
+        return membreRepository.findById(matricule)
+                .orElseGet(() -> membreRepository.save(creerMembreSite(matricule, prenom, nom, email, role, site)));
+    }
+
+    void initialiserMotDePasseAdmin(Membre membre) {
+        if (membre == null || (membre.getRole() != Role.ADMIN_GLOBAL && membre.getRole() != Role.ADMIN_SITE)) {
+            return;
+        }
+        if (membre.getAdminPasswordHash() != null && !membre.getAdminPasswordHash().isBlank()) {
+            return;
+        }
+        if (adminDefaultPassword == null || adminDefaultPassword.isBlank()) {
+            log.warn("Mot de passe administrateur initial non configure: le compte {} ne pourra pas se connecter",
+                    membre.getMatricule());
             return;
         }
 
-        membreRepository.save(creerMembreSite(matricule, prenom, nom, email, role, site));
+        membre.setAdminPasswordHash(passwordEncoder.encode(adminDefaultPassword));
+        membreRepository.save(membre);
     }
 
     private void getOrCreateMembreLibre(String matricule, String prenom, String nom, String email) {

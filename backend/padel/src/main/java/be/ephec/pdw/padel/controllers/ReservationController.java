@@ -1,12 +1,9 @@
 package be.ephec.pdw.padel.controllers;
 
-import be.ephec.pdw.padel.exception.ForbiddenException;
 import be.ephec.pdw.padel.service.CurrentUserService;
 import be.ephec.pdw.padel.dto.ReservationDTO;
 import be.ephec.pdw.padel.dto.ReservationReponseDTO;
-import be.ephec.pdw.padel.model.Membre;
 import be.ephec.pdw.padel.model.Reservation;
-import be.ephec.pdw.padel.repositories.ReservationRepository;
 import be.ephec.pdw.padel.service.ReservationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +19,6 @@ import java.util.List;
 public class ReservationController {
 
     private final ReservationService reservationService;
-    private final ReservationRepository reservationRepository;
     private final CurrentUserService currentUserService;
 
 
@@ -44,27 +40,11 @@ public class ReservationController {
 
     @PutMapping("/{id}/payer")
     public Reservation payerReservation(@PathVariable Long id){
-        Membre currentUser = currentUserService.getCurrentUser();
-        Reservation reservation = reservationRepository.findById(id)
-                .orElseThrow(() -> new ForbiddenException("Reservation introuvable"));
-
-        if (!currentUserService.isAdmin(currentUser)
-                && !currentUser.getMatricule().equals(reservation.getMembre().getMatricule())) {
-            throw new ForbiddenException("Acces refuse");
-        }
-
-        return reservationService.payerReservation(id);
+        return reservationService.payerReservation(id, currentUserService.getCurrentUser());
     }
 
     @GetMapping("/membre/{matricule}")
     public List<ReservationReponseDTO> getReservationsByMembre(@PathVariable String matricule) {
-        Membre currentUser = currentUserService.getCurrentUser();
-
-        if (!currentUserService.isAdmin(currentUser)
-                && !currentUser.getMatricule().equals(matricule.trim().toUpperCase())) {
-            throw new ForbiddenException("Acces refuse");
-        }
-
-        return reservationService.getReservationsByMembre(matricule);
+        return reservationService.getReservationsByMembre(matricule, currentUserService.getCurrentUser());
     }
 }
