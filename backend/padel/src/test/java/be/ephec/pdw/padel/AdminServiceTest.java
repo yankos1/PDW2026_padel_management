@@ -77,7 +77,7 @@ class AdminServiceTest {
         when(matchRepository.countMatchesByStatus(any(), any(), any(), any())).thenReturn(List.of());
         when(matchRepository.countMatchesByMonth(any(), any(), any(), any())).thenReturn(List.of());
         when(matchRepository.terrainStatistics(any(), any(), any(), any())).thenReturn(List.of());
-        when(matchRepository.upcomingIncompleteMatches(any(), any(), any())).thenReturn(List.of());
+        when(matchRepository.upcomingIncompleteMatches(any(), any(), any(), any(), any())).thenReturn(List.of());
         when(reservationRepository.sumRevenueByMonth(any(), any(), any(), any())).thenReturn(List.of());
     }
 
@@ -93,6 +93,13 @@ class AdminServiceTest {
                 LocalDateTime.of(2026, 1, 21, 0, 0),
                 null,
                 null
+        );
+        verify(matchRepository).upcomingIncompleteMatches(
+                any(),
+                eq(LocalDateTime.of(2026, 1, 5, 0, 0)),
+                eq(LocalDateTime.of(2026, 1, 21, 0, 0)),
+                eq(null),
+                eq(null)
         );
 
         assertEquals(LocalDateTime.of(2026, 1, 5, 0, 0), startCaptor.getValue());

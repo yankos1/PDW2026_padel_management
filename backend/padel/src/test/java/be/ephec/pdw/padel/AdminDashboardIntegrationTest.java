@@ -1,6 +1,7 @@
 package be.ephec.pdw.padel;
 
 import be.ephec.pdw.padel.dto.AdminDashboardDto;
+import be.ephec.pdw.padel.dto.IncompleteMatchDto;
 import be.ephec.pdw.padel.dto.MatchStatusStatisticsDto;
 import be.ephec.pdw.padel.exception.ForbiddenException;
 import be.ephec.pdw.padel.model.Match;
@@ -31,6 +32,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -152,6 +154,91 @@ class AdminDashboardIntegrationTest {
         assertEquals(new BigDecimal("25.00"), dashboard.resume().tauxRemplissageMatchs());
         assertEquals(1L, dashboard.resume().membresActifs());
         assertEquals(new BigDecimal("0.00"), dashboard.resume().chiffreAffaires());
+    }
+
+    @Test
+    void upcomingIncompleteMatchInsideSelectedPeriodShouldBeDisplayed() {
+        Match match = saveMatch(
+                StatutMatch.PLANIFIE,
+                LocalDate.now().plusDays(1).atTime(10, 0),
+                terrain
+        );
+
+        AdminDashboardDto dashboard = adminService.dashboard(
+                "G8001", LocalDate.now(), LocalDate.now().plusDays(2), null, null
+        );
+
+        assertEquals(Set.of(match.getId()), incompleteMatchIds(dashboard));
+    }
+
+    @Test
+    void upcomingIncompleteMatchOutsideSelectedPeriodShouldNotBeDisplayed() {
+        saveMatch(
+                StatutMatch.PLANIFIE,
+                LocalDate.now().plusDays(3).atTime(10, 0),
+                terrain
+        );
+
+        AdminDashboardDto dashboard = adminService.dashboard(
+                "G8001", LocalDate.now(), LocalDate.now().plusDays(1), null, null
+        );
+
+        assertEquals(Set.of(), incompleteMatchIds(dashboard));
+    }
+
+    @Test
+    void entirelyPastPeriodShouldReturnNoUpcomingIncompleteMatch() {
+        saveMatch(
+                StatutMatch.PLANIFIE,
+                LocalDate.now().plusDays(1).atTime(10, 0),
+                terrain
+        );
+
+        AdminDashboardDto dashboard = adminService.dashboard(
+                "G8001", LocalDate.now().minusDays(10), LocalDate.now().minusDays(5), null, null
+        );
+
+        assertEquals(Set.of(), incompleteMatchIds(dashboard));
+    }
+
+    @Test
+    void upcomingIncompleteMatchesShouldRespectSiteAndTerrainFilters() {
+        Site primarySite = terrain.getSite();
+        Terrain secondTerrain = terrainRepository.saveAndFlush(
+                Terrain.builder().nom("Second terrain").site(primarySite).build()
+        );
+        Site otherSite = siteRepository.saveAndFlush(site("Autre site dashboard"));
+        Terrain otherSiteTerrain = terrainRepository.saveAndFlush(
+                Terrain.builder().nom("Terrain autre site").site(otherSite).build()
+        );
+
+        LocalDateTime matchDate = LocalDate.now().plusDays(1).atTime(10, 0);
+        Match primaryMatch = saveMatch(StatutMatch.PLANIFIE, matchDate, terrain);
+        Match secondTerrainMatch = saveMatch(StatutMatch.PLANIFIE, matchDate.plusMinutes(15), secondTerrain);
+        saveMatch(StatutMatch.PLANIFIE, matchDate.plusMinutes(30), otherSiteTerrain);
+
+        AdminDashboardDto siteDashboard = adminService.dashboard(
+                "G8001", LocalDate.now(), LocalDate.now().plusDays(2), primarySite.getId(), null
+        );
+        AdminDashboardDto terrainDashboard = adminService.dashboard(
+                "G8001",
+                LocalDate.now(),
+                LocalDate.now().plusDays(2),
+                primarySite.getId(),
+                secondTerrain.getId()
+        );
+
+        assertEquals(
+                Set.of(primaryMatch.getId(), secondTerrainMatch.getId()),
+                incompleteMatchIds(siteDashboard)
+        );
+        assertEquals(Set.of(secondTerrainMatch.getId()), incompleteMatchIds(terrainDashboard));
+    }
+
+    private Set<Long> incompleteMatchIds(AdminDashboardDto dashboard) {
+        return dashboard.prochainsMatchsIncomplets().stream()
+                .map(IncompleteMatchDto::matchId)
+                .collect(Collectors.toSet());
     }
 
     private Map<StatutMatch, Long> statusRepartition(AdminDashboardDto dashboard) {

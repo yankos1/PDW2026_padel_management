@@ -153,7 +153,9 @@ public class AdminService {
         long reservationsConfirmees = reservationRepository.countConfirmedReservations(start, endExclusive, effectiveSiteId, terrainId);
         long reservationsValides = reservationRepository.countValidReservationsForFillRate(start, endExclusive, effectiveSiteId, terrainId);
         long matchsAnnules = matchRepository.countCancelledMatches(start, endExclusive, effectiveSiteId, terrainId);
-        List<IncompleteMatchProjection> prochainsIncomplets = matchRepository.upcomingIncompleteMatches(LocalDateTime.now(), effectiveSiteId, terrainId);
+        List<IncompleteMatchProjection> prochainsIncomplets = matchRepository.upcomingIncompleteMatches(
+                LocalDateTime.now(), start, endExclusive, effectiveSiteId, terrainId
+        );
         long creneauxUtilises = matchRepository.countUsedSlots(start, endExclusive, effectiveSiteId, terrainId);
         long creneauxDisponibles = creneauxDisponibles(startDate, endDate, effectiveSiteId, terrainId);
 

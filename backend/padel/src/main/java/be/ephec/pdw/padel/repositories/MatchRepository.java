@@ -187,6 +187,8 @@ public interface MatchRepository extends JpaRepository<Match,Long> {
             join t.site s
             left join m.reservations r
             where m.dateHeureDebut >= :maintenant
+              and m.dateHeureDebut >= :dateDebut
+              and m.dateHeureDebut < :dateFin
               and m.statut <> be.ephec.pdw.padel.model.StatutMatch.ANNULE
               and (:siteId is null or s.id = :siteId)
               and (:terrainId is null or t.id = :terrainId)
@@ -196,6 +198,8 @@ public interface MatchRepository extends JpaRepository<Match,Long> {
             """)
     List<IncompleteMatchProjection> upcomingIncompleteMatches(
             @Param("maintenant") LocalDateTime maintenant,
+            @Param("dateDebut") LocalDateTime dateDebut,
+            @Param("dateFin") LocalDateTime dateFin,
             @Param("siteId") @Nullable Long siteId,
             @Param("terrainId") @Nullable Long terrainId
     );

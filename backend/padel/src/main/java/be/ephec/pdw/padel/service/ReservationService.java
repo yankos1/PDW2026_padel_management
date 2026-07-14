@@ -130,6 +130,11 @@ public class ReservationService {
             throw new BusinessRuleException("reservation déja payée");
 
         Match match = reservation.getMatch();
+        LocalDateTime maintenant = LocalDateTime.now();
+        if (!maintenant.isBefore(match.getDateHeureDebut())) {
+            throw new IllegalStateException("Le paiement doit être effectué avant le début du match.");
+        }
+
         matchService.mettreAJourEtatMatch(match, reservation.getId());
 
         if (match.getStatut() == StatutMatch.ANNULE) {
@@ -165,7 +170,7 @@ public class ReservationService {
         }
 
         reservation.setEstPayee(true);
-        reservation.setDatePaiement(LocalDateTime.now());
+        reservation.setDatePaiement(maintenant);
         reservation.setMontant(montant);
         reservation.setStatut(StatutReservation.CONFIRMEE);
 

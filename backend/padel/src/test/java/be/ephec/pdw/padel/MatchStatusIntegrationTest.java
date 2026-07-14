@@ -30,6 +30,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
@@ -289,20 +290,39 @@ class MatchStatusIntegrationTest {
     }
 
     @Test
-    void currentLateOrganizerPaymentCanRaiseMatchTotalToSeventyFiveEuros() {
+    void shouldRejectPaymentAfterMatchStart() {
         Match match = saveMatch(StatutMatch.PLANIFIE, LocalDateTime.now().minusMinutes(1));
-        Reservation unpaidOrganizerReservation = reservationRepository.saveAndFlush(
-                reservation(match, organisateur, false)
+        organisateur.setSoldeDu(30.0);
+        Reservation unpaidOrganizerReservation = reservation(match, organisateur, false);
+        unpaidOrganizerReservation.setStatut(StatutReservation.EN_ATTENTE);
+        unpaidOrganizerReservation = reservationRepository.saveAndFlush(unpaidOrganizerReservation);
+        entityManager.clear();
+
+        double chiffreAffairesAvant = reservationRepository.sumPaidRevenue(
+                LocalDateTime.now().minusDays(1),
+                LocalDateTime.now().plusDays(1),
+                null,
+                null
+        );
+
+        Long reservationId = unpaidOrganizerReservation.getId();
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> reservationService.payerReservation(
+                        reservationId,
+                        membreRepository.findById(organisateur.getMatricule()).orElseThrow()
+                )
         );
         entityManager.clear();
 
-        Reservation paid = reservationService.payerReservation(
-                unpaidOrganizerReservation.getId(),
-                membreRepository.findById(organisateur.getMatricule()).orElseThrow()
-        );
-
-        assertEquals(75.0, paid.getMontant());
-        assertEquals(75.0, reservationRepository.sumPaidRevenue(
+        Reservation reloaded = reservationRepository.findById(reservationId).orElseThrow();
+        Membre organisateurReloaded = membreRepository.findById(organisateur.getMatricule()).orElseThrow();
+        assertEquals("Le paiement doit être effectué avant le début du match.", exception.getMessage());
+        assertFalse(reloaded.isEstPayee());
+        assertEquals(0.0, reloaded.getMontant());
+        assertEquals(StatutReservation.EN_ATTENTE, reloaded.getStatut());
+        assertEquals(30.0, organisateurReloaded.getSoldeDu());
+        assertEquals(chiffreAffairesAvant, reservationRepository.sumPaidRevenue(
                 LocalDateTime.now().minusDays(1),
                 LocalDateTime.now().plusDays(1),
                 null,
