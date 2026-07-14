@@ -96,6 +96,39 @@ public class MatchService {
                 .toList();
     }
 
+    @Transactional
+    public void convertirMatchsPrivesArrivesAUnJour() {
+        LocalDateTime maintenant = LocalDateTime.now();
+        LocalDateTime limite = maintenant.plusHours(24);
+        List<Match> matchs = matchRepository.findMatchsPrivesAConvertir(
+                maintenant,
+                limite,
+                StatutMatch.ANNULE
+        );
+
+        int nombreMatchsConvertis = 0;
+        for (Match match : matchs) {
+            long nbJoueursPayes = reservationRepository.countByMatchAndEstPayeeTrue(match);
+            if (!estMatchPriveAConvertir(match, maintenant, limite, nbJoueursPayes)) {
+                continue;
+            }
+
+            supprimerReservationsNonPayees(match, null);
+            if (match.getReservations() != null) {
+                match.getReservations().removeIf(reservation -> !reservation.isEstPayee());
+            }
+
+            if (convertirMatchPriveIncomplet(match, maintenant, nbJoueursPayes)) {
+                nombreMatchsConvertis++;
+                log.debug("Match {} converti en match public", match.getId());
+            }
+        }
+
+        if (nombreMatchsConvertis > 0) {
+            log.info("{} match(s) privé(s) converti(s) en match(s) public(s)", nombreMatchsConvertis);
+        }
+    }
+
     private boolean matchAffichable(Match match) {
         return match.getTerrain() != null
                 && match.getTerrain().getSite() != null
@@ -192,11 +225,7 @@ public class MatchService {
             }
 
             //devient public si privé et incomplet
-            if(!match.isEstPublic() && nbJoueursPayes < NOMBRE_JOUEURS_REQUIS){
-                match.setEstPublic(true);
-                match.setStatut(StatutMatch.PLANIFIE);
-                matchRepository.save(match);
-            }
+            convertirMatchPriveIncomplet(match, maintenant, nbJoueursPayes);
         }
 
         //vérification début du match
@@ -249,6 +278,37 @@ public class MatchService {
             match.setStatut(statut);
             matchRepository.save(match);
         }
+    }
+
+    private boolean estMatchPriveAConvertir(
+            Match match,
+            LocalDateTime maintenant,
+            LocalDateTime limite,
+            long nbJoueursPayes
+    ) {
+        return !match.isEstPublic()
+                && match.getStatut() != StatutMatch.ANNULE
+                && match.getDateHeureDebut() != null
+                && match.getDateHeureDebut().isAfter(maintenant)
+                && !match.getDateHeureDebut().isAfter(limite)
+                && nbJoueursPayes < NOMBRE_JOUEURS_REQUIS;
+    }
+
+    private boolean convertirMatchPriveIncomplet(
+            Match match,
+            LocalDateTime maintenant,
+            long nbJoueursPayes
+    ) {
+        if (match.isEstPublic()
+                || match.getStatut() == StatutMatch.ANNULE
+                || nbJoueursPayes >= NOMBRE_JOUEURS_REQUIS) {
+            return false;
+        }
+
+        match.setEstPublic(true);
+        match.setStatut(determinerStatut(match, maintenant, nbJoueursPayes));
+        matchRepository.save(match);
+        return true;
     }
 
     private StatutMatch determinerStatut(Match match, LocalDateTime maintenant, long nbJoueursPayes) {

@@ -1,6 +1,7 @@
 package be.ephec.pdw.padel.repositories;
 
 import be.ephec.pdw.padel.model.Match;
+import be.ephec.pdw.padel.model.StatutMatch;
 import be.ephec.pdw.padel.model.Terrain;
 import be.ephec.pdw.padel.repositories.projections.IncompleteMatchProjection;
 import be.ephec.pdw.padel.repositories.projections.MatchStatusStatsProjection;
@@ -33,6 +34,21 @@ public interface MatchRepository extends JpaRepository<Match,Long> {
               and m.statut <> be.ephec.pdw.padel.model.StatutMatch.ANNULE
             """)
     List<Match> findDisponiblesCandidates(@Param("maintenant") LocalDateTime maintenant);
+
+    @Query("""
+            select distinct m
+            from Match m
+            left join fetch m.reservations
+            where m.estPublic = false
+              and m.statut <> :statutAnnule
+              and m.dateHeureDebut > :maintenant
+              and m.dateHeureDebut <= :limite
+            """)
+    List<Match> findMatchsPrivesAConvertir(
+            @Param("maintenant") LocalDateTime maintenant,
+            @Param("limite") LocalDateTime limite,
+            @Param("statutAnnule") StatutMatch statutAnnule
+    );
 
     @Query("""
             select m

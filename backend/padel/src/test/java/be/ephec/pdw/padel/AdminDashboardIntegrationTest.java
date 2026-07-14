@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -127,6 +128,30 @@ class AdminDashboardIntegrationTest {
         assertThrows(ForbiddenException.class, () ->
                 adminService.dashboard("S8001", LocalDate.now(), LocalDate.now().plusDays(1), otherSite.getId(), null)
         );
+    }
+
+    @Test
+    void currentDashboardCountsConfirmedButUnpaidReservationAsValidAndActive() {
+        Match match = saveMatch(StatutMatch.PLANIFIE, LocalDateTime.now().plusHours(1), terrain);
+        Membre member = membreRepository.saveAndFlush(membre("G8200", Role.USER));
+        reservationRepository.saveAndFlush(Reservation.builder()
+                .match(matchRepository.findById(match.getId()).orElseThrow())
+                .membre(member)
+                .dateReservation(LocalDateTime.now())
+                .montant(0.0)
+                .estPayee(false)
+                .statut(StatutReservation.CONFIRMEE)
+                .build());
+        entityManager.clear();
+
+        AdminDashboardDto dashboard = adminService.dashboard(
+                "G8001", LocalDate.now(), LocalDate.now().plusDays(1), null, null
+        );
+
+        assertEquals(1L, dashboard.resume().reservationsConfirmees());
+        assertEquals(new BigDecimal("25.00"), dashboard.resume().tauxRemplissageMatchs());
+        assertEquals(1L, dashboard.resume().membresActifs());
+        assertEquals(new BigDecimal("0.00"), dashboard.resume().chiffreAffaires());
     }
 
     private Map<StatutMatch, Long> statusRepartition(AdminDashboardDto dashboard) {

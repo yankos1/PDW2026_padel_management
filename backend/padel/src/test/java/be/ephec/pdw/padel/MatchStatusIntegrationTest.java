@@ -16,6 +16,7 @@ import be.ephec.pdw.padel.repositories.ReservationRepository;
 import be.ephec.pdw.padel.repositories.SiteRepository;
 import be.ephec.pdw.padel.repositories.TerrainRepository;
 import be.ephec.pdw.padel.service.MatchService;
+import be.ephec.pdw.padel.service.ReservationService;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -36,6 +38,9 @@ class MatchStatusIntegrationTest {
 
     @Autowired
     private MatchService matchService;
+
+    @Autowired
+    private ReservationService reservationService;
 
     @Autowired
     private MatchRepository matchRepository;
@@ -159,6 +164,152 @@ class MatchStatusIntegrationTest {
         assertStatus(cancelled.getId(), StatutMatch.ANNULE);
     }
 
+    @Test
+    void scheduledConversionMakesPrivateMatchPublicAndReleasesUnpaidPlacesDayBefore() {
+        Match match = saveMatch(StatutMatch.COMPLET, LocalDateTime.now().plusHours(10), false);
+        reservationRepository.saveAndFlush(reservation(match, organisateur, true));
+        for (int i = 0; i < 3; i++) {
+            reservationRepository.saveAndFlush(reservation(match, nextMember(), false));
+        }
+        entityManager.clear();
+
+        matchService.convertirMatchsPrivesArrivesAUnJour();
+        entityManager.clear();
+
+        Match reloaded = matchRepository.findById(match.getId()).orElseThrow();
+        assertTrue(reloaded.isEstPublic());
+        assertEquals(1L, reservationRepository.countByMatch(reloaded));
+        assertEquals(1L, reservationRepository.countByMatchAndEstPayeeTrue(reloaded));
+        assertEquals(0L, reservationRepository.countByMatchAndEstPayeeFalse(reloaded));
+        assertEquals(StatutMatch.PLANIFIE, reloaded.getStatut());
+
+        MatchReponseDTO disponible = matchService.matchsDisponibles().stream()
+                .filter(dto -> dto.id().equals(match.getId()))
+                .findFirst()
+                .orElseThrow();
+        assertTrue(disponible.estPublic());
+        assertEquals(1, disponible.nbParticipants());
+    }
+
+    @Test
+    void privateMatchMoreThanTwentyFourHoursAwayRemainsUnchanged() {
+        Match match = saveMatch(StatutMatch.PLANIFIE, LocalDateTime.now().plusHours(25), false);
+        reservationRepository.saveAndFlush(reservation(match, organisateur, true));
+        reservationRepository.saveAndFlush(reservation(match, nextMember(), false));
+        entityManager.clear();
+
+        matchService.convertirMatchsPrivesArrivesAUnJour();
+        entityManager.clear();
+
+        Match reloaded = matchRepository.findById(match.getId()).orElseThrow();
+        assertFalse(reloaded.isEstPublic());
+        assertEquals(2L, reservationRepository.countByMatch(reloaded));
+        assertEquals(StatutMatch.PLANIFIE, reloaded.getStatut());
+    }
+
+    @Test
+    void alreadyPublicMatchIsNotChangedByScheduledConversion() {
+        Match match = saveMatch(StatutMatch.PLANIFIE, LocalDateTime.now().plusHours(10), true);
+        reservationRepository.saveAndFlush(reservation(match, organisateur, true));
+        reservationRepository.saveAndFlush(reservation(match, nextMember(), false));
+        entityManager.clear();
+
+        matchService.convertirMatchsPrivesArrivesAUnJour();
+        entityManager.clear();
+
+        Match reloaded = matchRepository.findById(match.getId()).orElseThrow();
+        assertTrue(reloaded.isEstPublic());
+        assertEquals(2L, reservationRepository.countByMatch(reloaded));
+        assertEquals(1L, reservationRepository.countByMatchAndEstPayeeFalse(reloaded));
+        assertEquals(StatutMatch.PLANIFIE, reloaded.getStatut());
+    }
+
+    @Test
+    void alreadyStartedPrivateMatchIsNotChangedByScheduledConversion() {
+        Match match = saveMatch(StatutMatch.PLANIFIE, LocalDateTime.now().minusMinutes(1), false);
+        reservationRepository.saveAndFlush(reservation(match, organisateur, true));
+        reservationRepository.saveAndFlush(reservation(match, nextMember(), false));
+        entityManager.clear();
+
+        matchService.convertirMatchsPrivesArrivesAUnJour();
+        entityManager.clear();
+
+        Match reloaded = matchRepository.findById(match.getId()).orElseThrow();
+        assertFalse(reloaded.isEstPublic());
+        assertEquals(2L, reservationRepository.countByMatch(reloaded));
+        assertEquals(1L, reservationRepository.countByMatchAndEstPayeeFalse(reloaded));
+        assertEquals(StatutMatch.PLANIFIE, reloaded.getStatut());
+    }
+
+    @Test
+    void cancelledPrivateMatchIsNotChangedByScheduledConversion() {
+        Match match = saveMatch(StatutMatch.ANNULE, LocalDateTime.now().plusHours(10), false);
+        reservationRepository.saveAndFlush(reservation(match, organisateur, true));
+        reservationRepository.saveAndFlush(reservation(match, nextMember(), false));
+        entityManager.clear();
+
+        matchService.convertirMatchsPrivesArrivesAUnJour();
+        entityManager.clear();
+
+        Match reloaded = matchRepository.findById(match.getId()).orElseThrow();
+        assertFalse(reloaded.isEstPublic());
+        assertEquals(2L, reservationRepository.countByMatch(reloaded));
+        assertEquals(1L, reservationRepository.countByMatchAndEstPayeeFalse(reloaded));
+        assertEquals(StatutMatch.ANNULE, reloaded.getStatut());
+    }
+
+    @Test
+    void scheduledPrivateMatchConversionIsIdempotent() {
+        Match match = saveMatch(StatutMatch.PLANIFIE, LocalDateTime.now().plusHours(10), false);
+        Reservation paidReservation = reservationRepository.saveAndFlush(
+                reservation(match, organisateur, true)
+        );
+        reservationRepository.saveAndFlush(reservation(match, nextMember(), false));
+        entityManager.clear();
+
+        matchService.convertirMatchsPrivesArrivesAUnJour();
+        entityManager.clear();
+        long nombreApresPremiereExecution = reservationRepository.countByMatch(
+                matchRepository.findById(match.getId()).orElseThrow()
+        );
+
+        matchService.convertirMatchsPrivesArrivesAUnJour();
+        entityManager.clear();
+
+        Match reloaded = matchRepository.findById(match.getId()).orElseThrow();
+        Reservation paidReloaded = reservationRepository.findById(paidReservation.getId()).orElseThrow();
+        Membre organisateurReloaded = membreRepository.findById(organisateur.getMatricule()).orElseThrow();
+        assertTrue(reloaded.isEstPublic());
+        assertEquals(1L, nombreApresPremiereExecution);
+        assertEquals(nombreApresPremiereExecution, reservationRepository.countByMatch(reloaded));
+        assertTrue(paidReloaded.isEstPayee());
+        assertEquals(15.0, paidReloaded.getMontant());
+        assertEquals(0.0, organisateurReloaded.getSoldeDu());
+        assertFalse(organisateurReloaded.isPenaliteActive());
+    }
+
+    @Test
+    void currentLateOrganizerPaymentCanRaiseMatchTotalToSeventyFiveEuros() {
+        Match match = saveMatch(StatutMatch.PLANIFIE, LocalDateTime.now().minusMinutes(1));
+        Reservation unpaidOrganizerReservation = reservationRepository.saveAndFlush(
+                reservation(match, organisateur, false)
+        );
+        entityManager.clear();
+
+        Reservation paid = reservationService.payerReservation(
+                unpaidOrganizerReservation.getId(),
+                membreRepository.findById(organisateur.getMatricule()).orElseThrow()
+        );
+
+        assertEquals(75.0, paid.getMontant());
+        assertEquals(75.0, reservationRepository.sumPaidRevenue(
+                LocalDateTime.now().minusDays(1),
+                LocalDateTime.now().plusDays(1),
+                null,
+                null
+        ));
+    }
+
     private void synchronize(Long matchId) {
         Match match = matchRepository.findById(matchId).orElseThrow();
         matchService.synchroniserStatut(match);
@@ -172,11 +323,15 @@ class MatchStatusIntegrationTest {
     }
 
     private Match saveMatch(StatutMatch statut, LocalDateTime dateHeureDebut) {
+        return saveMatch(statut, dateHeureDebut, true);
+    }
+
+    private Match saveMatch(StatutMatch statut, LocalDateTime dateHeureDebut, boolean estPublic) {
         Match match = Match.builder()
                 .terrain(terrain)
                 .organisateur(organisateur)
                 .dateHeureDebut(dateHeureDebut)
-                .estPublic(true)
+                .estPublic(estPublic)
                 .statut(statut)
                 .build();
         Match saved = matchRepository.saveAndFlush(match);
