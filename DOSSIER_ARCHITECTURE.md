@@ -27,8 +27,8 @@ Le frontend est une application Angular générée avec Angular CLI. Le point d'
 
 Les composants se trouvent principalement dans `frontend/src/app/core/components` :
 
-- `login` : authentification via matricule ;
-- `home` : page d'accueil après connexion ;
+- `login` : connexion et inscription ;
+- `home` : page d'accueil ;
 - `navbar` : navigation principale ;
 - `match-list` : liste des matchs disponibles ;
 - `create-match` : création d'un match ;
@@ -42,10 +42,11 @@ L'application utilise des composants standalone Angular et plusieurs modules Ang
 
 Les services sont placés dans `frontend/src/app/core/services` :
 
-- `AuthService` : connexion, inscription, stockage de l'utilisateur dans le `localStorage`, rôle et type de membre ;
-- `MatchService` : accès aux matchs, terrains, sites et créneaux disponibles ;
-- `ReservationService` : rejoindre un match, ajouter un joueur à un match privé, consulter et payer des réservations ;
-- `AdminService` : récupération des indicateurs d'administration.
+- `AuthService` : connexion, inscription et session ;
+- `MatchService` : matchs, terrains, sites et créneaux ;
+- `ReservationService` : participation, paiement et réservations ;
+- `AdminService` : données du dashboard ;
+- `NotificationService` : notifications snackbar.
 
 Ces services utilisent `HttpClient`, fourni dans `app.config.ts`.
 
@@ -65,18 +66,7 @@ Routes principales :
 - `/admin`.
 
 Les routes fonctionnelles sont protégées par `authGuard`. La route `/admin` utilise aussi `adminGuard`.
-
-### Modèles frontend
-
-Les modèles TypeScript sont dans `frontend/src/app/core/models` :
-
-- `membre.ts` ;
-- `match.ts` ;
-- `reservation.ts` ;
-- `site.ts` ;
-- `terrain.ts`.
-
-Ils représentent les données échangées avec le backend et utilisées dans les composants.
+Le JWT et l'utilisateur sont stockés dans `sessionStorage`. `authInterceptor` ajoute le JWT aux requêtes avec l'en-tête `Authorization: Bearer ...`.
 
 ### Communication HTTP
 
@@ -90,12 +80,14 @@ Le backend est une application Spring Boot située dans `backend/padel`. La clas
 
 ### Controllers
 
-Les contrôleurs REST se trouvent dans `backend/padel/src/main/java/be/ephec/pdw/padel/controllers` :
+Les controllers REST sont dans le package `controllers` :
 
-- `AuthController` : authentification et gestion des utilisateurs ;
-- `MatchController` : création de matchs, matchs disponibles, joueurs inscrits, terrains, créneaux et sites ;
-- `ReservationController` : rejoindre un match, ajouter un joueur à un match privé, payer une réservation, consulter les réservations d'un membre ;
-- `AdminController` : indicateurs administratifs.
+- `AuthController` : connexion, inscription et mot de passe ;
+- `MatchController` : matchs, terrains, sites et créneaux ;
+- `ReservationController` : participation, paiement et réservations ;
+- `AdminController` : indicateurs et dashboard administratif.
+
+Les entrées sont validées avec `@Valid`. Les controllers délèguent ensuite le traitement aux services.
 
 ### Services
 
@@ -105,7 +97,9 @@ Les services métier se trouvent dans le package `service` :
 - `MatchService` ;
 - `ReservationService` ;
 - `TerrainService` ;
-- `AdminService`.
+- `AdminService`;
+- `CurrentUserService` ;
+- `LoginAttemptService`.
 
 Ils centralisent les règles de gestion : délais de réservation, validation des membres, disponibilité des terrains, statut des matchs, paiement et indicateurs d'administration.
 
@@ -122,41 +116,26 @@ Les repositories Spring Data JPA se trouvent dans le package `repositories` :
 
 Ils étendent `JpaRepository` et assurent l'accès aux données.
 
-### Models et entities
+Des requêtes JPQL et des projections sont utilisées pour les statistiques du dashboard.
+### Modèles et DTO
 
-Les entités JPA sont dans le package `model` :
+Les entités JPA se trouvent dans le package `model` :
 
 - `Membre`, avec héritage `JOINED` ;
-- `MembreGlobal`, `MembreSite`, `MembreLibre` ;
-- `Site` ;
-- `Terrain` ;
-- `Match` ;
-- `Reservation` ;
-- `JourFermeture`.
+- `MembreGlobal`, `MembreSite` et `MembreLibre` ;
+- `Site`, `Terrain`, `Match`, `Reservation` et `JourFermeture`.
 
-Les énumérations présentes sont `Role`, `StatutMatch` et `StatutReservation`.
+Les énumérations principales sont `Role`, `StatutMatch` et `StatutReservation`.
 
-### DTO
+Le package `dto` contient les entrées et sorties de l'API : connexion, inscription, session, matchs, réservations, terrains, joueurs et dashboard administratif.
 
-Les DTO sont regroupés dans le package `dto` :
+### Packages techniques
 
-- `LoginDTO` ;
-- `RegisterDTO` ;
-- `MatchDTO` et `MatchReponseDTO` ;
-- `ReservationDTO` et `ReservationReponseDTO` ;
-- `TerrainDTO` ;
-- `JoueurDTO`.
-
-### Exceptions
-
-Le package `configuration` contient :
-
-- `BusinessRuleException` ;
-- `ForbiddenException` ;
-- `GlobalExceptionHandler` ;
-- `CorsConfig`.
-
-`GlobalExceptionHandler` transforme les exceptions métier en réponses HTTP adaptées, notamment `400 Bad Request` et `403 Forbidden`.
+- `configuration` : CORS, Spring Security, Jackson et BCrypt ;
+- `security` : JWT et filtre d'authentification ;
+- `exception` : exceptions, `GlobalExceptionHandler` et `ErrorResponse` ;
+- `scheduler` : tâches automatiques ;
+- `seed` : données de démonstration du profil `dev`.
 
 ## Base de données
 
@@ -170,30 +149,51 @@ Hibernate est configuré avec `spring.jpa.hibernate.ddl-auto=update`, ce qui per
 
 Relations principales :
 
-- un `Site` possède plusieurs `Terrain` ;
-- un `Site` possède plusieurs `JourFermeture` ;
+- un `Site` possède plusieurs `Terrain` et plusieurs `JourFermeture` ;
 - un `Terrain` appartient à un `Site` ;
 - un `Match` est lié à un `Terrain` et à un membre organisateur ;
 - un `Match` possède plusieurs `Reservation` ;
 - une `Reservation` est liée à un `Membre` et à un `Match` ;
-- `MembreSite` est lié à un `Site`.
+- un `MembreSite` est lié à un `Site`.
+
+Les tests d'intégration utilisent une base H2 en mémoire.
+
+## Sécurité
+
+L'authentification se fait par matricule. Les utilisateurs ordinaires n'ont pas de mot de passe. Un mot de passe est demandé uniquement aux administrateurs et il est encodé avec BCrypt.
+
+Après la connexion, le backend génère un JWT contenant le matricule et le rôle. Spring Security et `JwtAuthenticationFilter` valident ce jeton pour les endpoints protégés.
+
+Les rôles sont `USER`, `ADMIN_SITE` et `ADMIN_GLOBAL`. Un administrateur de site est limité aux données de son site. Un administrateur global peut accéder aux différents sites. Les guards Angular protègent la navigation, mais les autorisations réelles sont vérifiées par le backend.
+
+## Gestion des erreurs
+
+Les DTO utilisent Jakarta Validation pour vérifier les données reçues.
+
+`GlobalExceptionHandler` transforme les exceptions en réponses HTTP communes. `ErrorResponse` contient le statut, le message, la date et les éventuelles erreurs de champs.
+
+Angular lit ce format avec `api-error.util.ts`. Les erreurs sont affichées dans les formulaires ou avec les snackbars de `NotificationService`.
+
+## Tests
+
+Le backend contient des tests unitaires, des tests de controllers, des tests d'intégration avec H2 et des tests de sécurité. Ils couvrent notamment les règles métier, les transactions, JWT, les autorisations intersites, les statuts et le scheduler.
+
+Le frontend teste les composants, services, guards, notifications et erreurs avec Vitest. Cypress est configuré pour trois parcours E2E : connexion, consultation des matchs et consultation des réservations.
+
+Résultats vérifiés le 16 juillet 2026 :
+
+- **141 tests backend réussis** avec `mvn test` ;
+- **51 tests frontend réussis** avec `npm test -- --watch=false`.
 
 ## Librairies, outils et frameworks structurants
 
-- Angular 21 ;
-- Angular Material ;
-- RxJS ;
-- TypeScript ;
-- Tailwind CSS (partiellement utilisé) ;
-- Spring Boot ;
+- Angular 21.2, Angular Material 21.2 et Tailwind CSS 4.2 ;
+- Java 25 et Spring Boot 4.0.3 ;
+- Spring Web MVC et Spring Security ;
+- BCrypt et JJWT 0.12.6 ;
+- Spring Data JPA, Hibernate et MySQL ;
 - Maven ;
-- Spring Web MVC ;
-- Spring Data JPA ;
-- Hibernate ;
-- MySQL Connector/J ;
-- Lombok ;
-- Springdoc OpenAPI / Swagger UI ;
-- Vitest pour les tests frontend ;
-- JUnit / Spring Boot Test pour les tests backend.
+- Cypress 15.18.1 ;
+- Springdoc OpenAPI 2.8.13 et Swagger UI.
 
 Le dépôt ne contient pas de fichier Docker ou `docker-compose`. Pour l'environnement local, MySQL peut être lancé avec une commande Docker exposant le port `3307`.
